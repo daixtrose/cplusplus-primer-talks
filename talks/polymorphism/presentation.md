@@ -333,6 +333,122 @@ template std::string consume<Impl>(Impl&);
 
 ---
 
+background-image: url(images/IMG_0323.JPEG)
+class: impact
+
+# Pros<br>&<br>Cons
+
+---
+
+# Pros & Cons
+
+.col-6[
+## Classic
+
+- Uses an **abstract** (interface) class.
+  - The `vtable` *might* have an impact on performance
+  - Very strict adherence to interface definition
+  - CV qualifiers must match exactly   
+]
+.col-6[
+## Modern
+
+- Requires (sic!) a **concept**
+  - You use the **latest compiler** anyway, do you?
+  - Concepts allow sloppier constraints via `std::convertible_to`
+  - Qualifiers can be disregarded 
+]
+
+```c++
+template <typename T>
+concept has_super_cool_features = requires(T t, std::string s) {
+    { t.coolFeature() } 
+      -> std::convertible_to<`std::string_view`>;
+    { t.set(s) } -> std::same_as<void>; };
+```
+
+
+---
+
+# Pros & Cons
+
+.col-6[
+## Classic
+
+- Every type that is passed as a parameter **must inherit** from the **interface**.  
+  - Tight coupling<br>(via interface)
+  - The interface ***definition*** must be visible at **point of *class definition***.   
+  - Later use cases (like introducing tests) yield backpressure to the class design.
+]
+.col-6[
+## Modern
+
+- Every type that is passed as a parameter **must adhere** to the **concept**.
+  - Zero *explicit* coupling<br>(yet semantics must fit!)
+  - The interface ***constraint*** must be visible at the **point of *usage***.      
+  - Later use cases can be easily introduced without effect on the class design.
+]
+
+---
+
+# Pros & Cons
+
+.col-6[
+## Classic
+
+- Splitting interfaces into subsets is possible via multiple inheritance. 
+]
+.col-6[
+## Modern
+
+- Splitting interfaces into subsets is possible via separate concepts.
+  - `template <typename T> concept c = c1<T> && c2<T>;`  
+]
+
+---
+
+# Splitting Interfaces (Classic)
+
+```c++
+class IHasSet {
+public:
+    virtual void set(std::string s) = 0; 
+    virtual ~IHasSet() = default; 
+};
+
+class IHasCoolFeature {
+public:
+    virtual std::string coolFeature() const = 0; 
+    virtual ~IHasCoolFeature() = default;
+};
+
+class ISuperCoolFeatures : public IHasSet, IHasCoolFeature {};
+```
+
+---
+
+# Splitting Interfaces (Modern)
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, std::string s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+template <typename T> 
+concept has_cool_feature = requires(T t, std::string s) {
+    { t.coolFeature() } -> std::convertible_to<std::string_view>;
+};
+
+template <typename T> 
+concept has_super_cool_features = 
+    // order matters for short circuit!
+    has_cool_feature<T> && has_set<T>;
+```
+
+---
+
+
 # Enthusiasm First
 
 > .primary[#### Let us imagine we are in a startup which will create a pacemaker.]
