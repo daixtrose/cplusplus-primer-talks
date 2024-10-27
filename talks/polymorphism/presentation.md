@@ -448,6 +448,161 @@ concept has_super_cool_features =
 
 ---
 
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, std::string s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+```
+
+The requirement for `s` could be relaxed. <br>E.g. it suffices if it is convertible to `std::stringview`. 
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, /* what do we do here ? */ s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+``` 
+
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, std::string s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+```
+
+See https://stackoverflow.com/a/79130967/1528210
+
+```c++
+template <typename T, `typename S = std::string`>
+concept has_set = requires(T t, S s) {
+    `requires std::convertible_to<S, std::string_view>;`
+    { t.set(s) } -> std::same_as<void>;
+};
+``` 
+
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+// Default parameter must fulfill the constraint 
+// --------------------------------VVVVVVVVVVV
+template <typename T, `typename S = std::string`>
+concept has_set = requires(T t, S s) {
+    // additional constraint
+    `requires std::convertible_to<S, std::string_view>;`
+    { t.set(s) } -> std::same_as<void>;
+};
+``` 
+
+```c++
+void use(has_set auto & o) {
+     o.set("aaa");
+}
+```
+
+---
+
+# Testing 
+
+- Showing an example with [µt](https://github.com/boost-ext/ut) as testing framework for no good reason. It looks promising and lightweight, and it was written by [Krzysztof Jusiak](https://github.com/krzysztof-jusiak) whom I adore for his outstanding C++ programming skills and his [C++ Tip of The Week](https://github.com/tip-of-the-week/cpp) collection of crazy C++ riddles.
+- [µt](https://github.com/boost-ext/ut) does not provide a mocking framework.
+- I haven't found a **mocking framework that works with concepts**.
+
+---
+
+# Testing with Mocks
+
+```c++
+struct Mock {
+    std::list<std::string> collectedSetArguments;
+    mutable std::atomic<std::size_t> numberOfCallsToCoolFeature { 0 };
+    std::string coolFeature() const {
+        `++numberOfCallsToCoolFeature`;
+        return collectedSetArguments.empty()
+            ? "<default value>"
+            : collectedSetArguments.back();
+    }
+    void set(std::string s)
+    {
+        collectedSetArguments.`emplace_back(std::move(s))`;
+    }
+};
+```
+
+---
+
+# Testing with Mocks
+
+```c++
+"[modern mock]"_test = [] {
+    static constexpr auto EXPECTED_COOLFEATURE_CALLS = 2; 
+    `mocking::Mock impl`;
+    expect("<default value>"s == impl.coolFeature());
+        auto result = `modern::consume(impl)`;
+
+        expect(EXPECTED_COOLFEATURE_CALLS 
+            == impl.numberOfCallsToCoolFeature);
+        expect("The answer to all questions is 42"s 
+            == result);
+        // side effect
+        expect("42"s == impl.coolFeature()); 
+    };
+```
+
+---
+
+```c++
+// See https://stackoverflow.com/a/79130967/1528210
+#include <type_traits>
+#include <string_view>
+#include <string>
+
+template <typename T, typename S = std::string>
+concept has_set = requires(T t, S s) {
+    requires std::convertible_to<S, std::string_view>;
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct HasSetClass
+{
+    void set([[maybe_unused]] std::string const & s) {}
+};
+
+struct HasSetClass2
+{
+    void set([[maybe_unused]] std::string_view const & s) {}
+};
+
+struct HasSetClass3
+{
+    void set([[maybe_unused]] std::string_view const & s) const noexcept {}
+};
+
+
+void use(has_set auto & o)
+{
+     o.set("aaa");
+}
+
+int main() {
+    HasSetClass2 a2;
+    use(a2);
+
+    HasSetClass3 a3;
+    use(a3);
+
+}
+```
+
+---
 
 # Enthusiasm First
 
@@ -587,3 +742,55 @@ class: middle
 
 ---
 
+```c++
+#include <tuple>
+#include <string>
+
+template<typename>
+struct function_traits;
+
+template <typename Return, typename... Args>
+struct function_traits<Return (*)(Args...)>
+{
+   using return_type = Return;
+   using arg_types = std::tuple<Args...>;
+
+   static constexpr std::size_t arity = sizeof...(Args);
+   template <std::size_t i> using arg_type = Args...[i];
+};
+
+template <typename Class, typename Return, typename... Args>
+struct function_traits<Return (Class::*)(Args...)>
+   : function_traits<Return(*)(Args...)>
+{
+    using class_type = Class;
+};
+
+// test
+std::size_t func(int, const std::string &s) { return s.size(); }
+struct Test {
+    std::size_t func(int, const std::string &s) { return s.size(); }
+};
+
+int main() {
+  // using traits = function_traits<decltype(func)>;
+  using traits = function_traits<decltype(&Test::func)>;
+
+  static_assert(traits::arity == 2);
+  static_assert(std::is_same_v<traits::return_type, std::size_t>);
+  static_assert(std::is_same_v<traits::arg_type<0>, int>);
+  static_assert(std::is_same_v<traits::arg_type<1>, const std::string &>);
+  static_assert(std::is_same_v<traits::arg_types, std::tuple<int, const std::string &>>);
+
+  return 0;
+}
+
+
+// template<auto mf, typename T>
+// auto make_proxy(T && obj)
+// {
+//     return [&obj] (auto &&... args) {
+//         return (std::forward<T>(obj).*mf)(std::forward<decltype(args)>(args)...);
+//     };
+// }
+```
