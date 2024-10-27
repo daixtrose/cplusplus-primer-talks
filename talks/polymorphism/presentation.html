@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title></title>
+    <link rel="stylesheet" href="template/fonts.css" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="template/remark.min.js"></script>
+    <script>
+      function create() {
+        return remark.create({
+          sourceUrl: "presentation.md",
+          ratio: "16:9",
+          highlightLines: true,
+          countIncrementalSlides: false,
+          highlightStyle: "github",
+          highlightLines: true,
+          highlightSpans: true,
+          // highlightStyle: 'default'
+        });
+      }
+    </script>
+  </head>
+  <body onload="slideshow = create()"></body>
+</html>
