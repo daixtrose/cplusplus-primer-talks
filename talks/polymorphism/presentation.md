@@ -13,7 +13,7 @@ template: inverse
 
 <div class="footer"><div class="flexcontainer" class="primary"><span>.body[[https://daixtrose.de](https://daixtrose.de)]</span><span>.center[C++ User Group Aachen 2024]</span><span>.body[&copy; 2024 Markus Werle ([github](http://github.com/daixtrose) [linkedin](https://www.linkedin.com/in/markus-werle-04305a12a/))]</span></div></div>
 
-
+.col-4[
 <br>
 <br>
 <br>
@@ -25,9 +25,49 @@ template: inverse
 <br>
 <br>
 
-# .white[Polymorphism in C++]
+## .white[The Concept of<br>Polymorphism<br>in C++]
+]
+.col-8[
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
-`expect(std::chrono::duration == 40min) // #NoEstimates`
+<pre>
+using namespace std::chrono
+auto t_0 = high_resolution_clock::now();
+give_talk();
+auto t_1 = high_resolution_clock::now();
+auto duration = duration_cast<minutes>(t_1 - t_0);
+expect(duration.count() < 40, 
+       "Talk went longer than 40 minutes");
+</pre>
+]
+---
+
+```c++
+using namespace std::chrono
+
+auto t_0 
+  = high_resolution_clock::now();
+
+give_talk();
+
+auto t_1 
+  = high_resolution_clock::now();
+
+auto duration 
+  = duration_cast<minutes>
+    (t_1 - t_0);
+
+expect(duration.count() < 40, 
+       "Talk went longer " 
+       "than 40 minutes");
+```
 
 ---
 
@@ -604,6 +644,22 @@ int main() {
 
 ---
 
+```c++
+#include <concepts>
+#include <string_view>
+
+
+template<typename T>
+concept has_set = requires {
+    // Use the static cast to support classes that 
+    // have multiple set overloads
+    { static_cast<void(T::*)(std::string_view)>(&T::set) };
+};
+```
+
+
+---
+
 # Enthusiasm First
 
 > .primary[#### Let us imagine we are in a startup which will create a pacemaker.]
@@ -794,3 +850,225 @@ int main() {
 //     };
 // }
 ```
+
+---
+
+```c++
+#include <type_traits>
+#include <string_view>
+#include <string>
+#include <print>
+
+struct NeverUseThis {
+    template <typename T>
+    [[ noreturn ]] operator T() {
+        static_assert("never reach me!");
+        throw;
+    }     
+};
+
+template <typename T>
+concept has_set = 
+    std::is_invocable_v<decltype(&T::set), T &, std::string>
+    || std::is_invocable_v<decltype(&T::set), T &, std::string_view>
+    || std::is_invocable_v<decltype(&T::set), T &, char const *> 
+    ;
+
+    // std::is_invocable<, decltype(a), int>
+
+    // std::convertible_to<S, std::string_view> 
+    // &&
+    // requires(T t, S s) {
+    //     { t.set(s) } -> std::same_as<void>;      
+    // };
+
+//static_cast<void(T::*)(std::string_view)>(&T::set); 
+
+struct Foo {};
+static_assert(!has_set<Foo>);
+
+struct Bar {
+    void set(std::string_view);
+};
+static_assert(has_set<Bar>);
+
+struct Baz {
+    void set(std::string);
+
+};
+static_assert(has_set<Baz>);
+
+struct FooBarBaz {
+    void set(std::string_view) { 
+        std::print("FooBarBaz\n");
+    };
+    void set(int) { };
+};
+static_assert(has_set<FooBarBaz>);
+
+struct HasSetClass
+{
+    void set([[maybe_unused]] std::string const & s) {
+        std::print("HasSetClass\n");
+    }
+};
+
+struct HasSetClass2
+{
+    void set([[maybe_unused]] std::string_view const & s) {
+        std::print("HasSetClass2\n");
+    }
+};
+
+
+void use(has_set auto & o)
+{
+     o.set("aaa");
+}
+
+int main() {
+    FooBarBaz fbb;
+    use(fbb);
+
+    HasSetClass a1;
+    use(a1);
+
+    HasSetClass2 a2;
+    use(a2);
+}
+```
+
+---
+
+```c++
+struct NeverUseThis {
+    template <typename T>
+    [[ noreturn ]] operator T() {
+        static_assert("never reach me!");
+        throw;
+    }
+};
+```
+
+Dabei reicht
+
+```c++
+struct NeverUseThis {
+    template <typename T> operator T();
+};
+```
+
+---
+
+```c++
+#include <string>
+#include <string_view>
+
+template<typename T>
+concept has_set = requires(T t) {
+    { t.set(
+        [](){ struct {
+            operator std::string_view();
+            operator std::string();
+            operator char *();
+
+        } s; return s; }()
+      ) } -> std::same_as<void>;
+};
+
+struct Foo {};
+static_assert(!has_set<Foo>);
+
+struct Bar {
+    void set(std::string_view);
+};
+static_assert(has_set<Bar>);
+
+struct Baz {
+    void set(std::string);
+    void set(int i);
+};
+static_assert(has_set<Baz>);
+
+struct Bazz {
+    void set(char *);
+};
+static_assert(has_set<Bazz>);
+
+
+int main()
+{
+}
+```
+
+---
+
+```c++
+template<typename T>
+concept has_set = requires(T t) {
+    { t.set(
+        [](){ struct {
+            operator std::string_view();
+            
+        } s; return s; }()
+      ) } -> std::same_as<void>; }
+      ||
+      requires(T t) {
+    { t.set(
+        [](){ struct {
+            operator std::string();
+        } s; return s; }()
+      ) } -> std::same_as<void>; }
+       ||
+      requires(T t) {
+    { t.set(
+        [](){ struct {
+            operator char *();
+        } s; return s; }()
+      ) } -> std::same_as<void>; }   
+      ;
+```
+---
+
+```c++
+template< class F, class... Args >
+
+concept invocable =
+    requires(F&& f, Args&&... args) {
+        std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+            /* not required to be equality-preserving */
+    };
+```
+
+---
+
+```c++
+#include <string>
+#include <string_view>
+#include <concepts>
+
+template<typename T, typename Return, typename Arg>
+concept has_set_memfn = requires(T t) { { t.set(Arg{}) }->std::same_as<Return>; };
+
+template<typename T>
+concept has_set = has_set_memfn<T, void, std::string_view>;
+
+struct Foo {};
+static_assert(!has_set<Foo>);
+
+struct Bar {
+    void set(std::string_view){}
+};
+static_assert(has_set<Bar>);
+
+int main() {
+    Bar bar;
+
+    bar.set([](){ struct {
+            operator std::string_view() const { return ""; }
+        } s; return s; }());
+}
+```
+
+---
+
