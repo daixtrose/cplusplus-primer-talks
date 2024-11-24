@@ -22,28 +22,37 @@
 
         slideshow.on("showSlide", function (slide) {
           console.log("entering showSlide");
-          test = document.getElementById("qr-repo");
+          test = document.getElementById("url-repo");
 
           if (test) {
             console.log("element found!");
           }
 
-          var qr = new QRious({
-            element: document.getElementById("qr"),
-            background: "lightgray",
+          var qr_repo = new QRious({
+            element: document.getElementById("url-repo"),
+            background: "#eeeeee",
             backgroundAlpha: 0.8,
             foreground: "black",
             foregroundAlpha: 0.8,
             level: "H",
             padding: 25,
-            size: 450,
+            size: 400,
             value:
               "https://github.com/daixtrose/cplusplus-primer/tree/main/polymorphism",
           });
 
-          if (qr) {
-            console.log("QR element created: " + qr.size);
-          }
+          var qr_slides = new QRious({
+            element: document.getElementById("url-slides"),
+            background: "#eeeeee",
+            backgroundAlpha: 0.8,
+            foreground: "black",
+            foregroundAlpha: 0.8,
+            level: "H",
+            padding: 25,
+            size: 400,
+            value:
+              "https://www.daixtrose.de/talks/crazy-generic-lambdas/crazy-generic-lambddas.html",
+          });
         });
 
         return slideshow;

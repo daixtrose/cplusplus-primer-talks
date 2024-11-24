@@ -54,11 +54,26 @@ expect(duration.count() < 40,
 
 ---
 
-## Follow the Code and Slides on your Device  
+.col-6[
 
-Repo
+## Repo
 
-<img id="qr">
+https://github.com/daixtrose/cplusplus-primer/tree/main/polymorphism
+
+<br>
+<img id="url-repo">
+
+]
+
+.col-6[
+
+## Slides
+
+https://www.daixtrose.de/talks/crazy-generic-lambdas/crazy-generic-lambddas.html
+
+<img id="url-slides">
+
+]
 
 ---
 
