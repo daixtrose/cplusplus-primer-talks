@@ -13,7 +13,8 @@ template: inverse
 
 <div class="footer"><div class="flexcontainer" class="primary"><span>.body[[https://daixtrose.de](https://daixtrose.de)]</span><span>.center[C++ User Group Aachen 2024]</span><span>.body[&copy; 2024 Markus Werle ([github](http://github.com/daixtrose) [linkedin](https://www.linkedin.com/in/markus-werle-04305a12a/))]</span></div></div>
 
-.col-4[
+.col-6[
+<br>
 <br>
 <br>
 <br>
@@ -25,11 +26,11 @@ template: inverse
 <br>
 <br>
 
-## .white[The Concept of<br>Polymorphism<br>in C++]
+## .white[The Concept of<br>Polymorphism in C++]
 ]
-.col-8[
-<br>
-<br>
+.col-6[.small[
+
+
 <br>
 <br>
 <br>
@@ -37,37 +38,27 @@ template: inverse
 <br>
 <br>
 
-<pre>
+
+```c++
 using namespace std::chrono
 auto t_0 = high_resolution_clock::now();
 give_talk();
 auto t_1 = high_resolution_clock::now();
-auto duration = duration_cast<minutes>(t_1 - t_0);
+auto duration = 
+    duration_cast<minutes>(t_1 - t_0);
 expect(duration.count() < 40, 
-       "Talk went longer than 40 minutes");
-</pre>
-]
----
-
-```c++
-using namespace std::chrono
-
-auto t_0 
-  = high_resolution_clock::now();
-
-give_talk();
-
-auto t_1 
-  = high_resolution_clock::now();
-
-auto duration 
-  = duration_cast<minutes>
-    (t_1 - t_0);
-
-expect(duration.count() < 40, 
-       "Talk went longer " 
+       "Talk went longer" 
        "than 40 minutes");
 ```
+]]
+
+---
+
+## Follow the Code and Slides on your Device  
+
+Repo
+
+<img id="qr">
 
 ---
 
@@ -678,8 +669,6 @@ concept has_set = requires {
   
 ]
 .col-4[
-
-![](images/Bob_the_builder.jpg)
 
 ]
 

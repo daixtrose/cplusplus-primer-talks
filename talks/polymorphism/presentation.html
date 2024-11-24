@@ -6,9 +6,10 @@
     <link rel="stylesheet" href="template/fonts.css" />
     <link rel="stylesheet" href="style.css" />
     <script src="template/remark.min.js"></script>
+    <script src="qrious.min.js"></script>
     <script>
       function create() {
-        return remark.create({
+        slideshow = remark.create({
           sourceUrl: "presentation.md",
           ratio: "16:9",
           highlightLines: true,
@@ -18,6 +19,34 @@
           highlightSpans: true,
           // highlightStyle: 'default'
         });
+
+        slideshow.on("showSlide", function (slide) {
+          console.log("entering showSlide");
+          test = document.getElementById("qr-repo");
+
+          if (test) {
+            console.log("element found!");
+          }
+
+          var qr = new QRious({
+            element: document.getElementById("qr"),
+            background: "lightgray",
+            backgroundAlpha: 0.8,
+            foreground: "black",
+            foregroundAlpha: 0.8,
+            level: "H",
+            padding: 25,
+            size: 450,
+            value:
+              "https://github.com/daixtrose/cplusplus-primer/tree/main/polymorphism",
+          });
+
+          if (qr) {
+            console.log("QR element created: " + qr.size);
+          }
+        });
+
+        return slideshow;
       }
     </script>
   </head>
