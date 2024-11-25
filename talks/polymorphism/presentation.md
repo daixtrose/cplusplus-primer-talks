@@ -587,9 +587,141 @@ struct Mock {
         expect("42"s == impl.coolFeature()); 
     };
 ```
+
 ---
 
-# How to Enforce an Argument Constraint on a Method Parameter?  
+background-image: url(images/IMG_2077.JPEG)
+class: impact
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+## Hop on the Concepts Train 
+
+<br>
+<br>
+
+https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0734r0.pdf
+
+---
+
+# Concepts
+
+Implicit **SFINAE**: If it compiles, then template parameter `T` adheres to the constraint:
+
+```c++
+template<typename T>
+concept R = `requires` (T i) {
+    typename T::type;
+    // special syntax to describe the return value 
+    // of the expression in {}
+    `{`*i`} ->` const typename T::type&;
+};
+```
+
+---
+
+# Concepts
+
+```c++
+ // A concept is a named requirement  
+ template<typename T>
+ concept C = `requires (T x) { x + x; }`;
+ //          |- requires `expression` -|
+
+ template<typename T> `requires C<T>` // <-- requires `clause`
+ T add(T a, T b) { return a + b; }
+```
+
+Putting it together in one for a `requires requires`:
+
+```c++
+ template<typename T>
+ `requires requires` (T x) { x + x; }
+ T add(T a, T b) { return a + b; }
+```
+
+---
+
+# Concepts
+
+```c++
+template<typename T> concept C = 
+    /* sth that evaluates to true or a requires expression */;
+```
+e.g.
+```c++
+template<typename T> concept C = sizeof(T) > 2;
+```
+
+Four different ways to say the same thing
+
+```c++
+template<typename T> `requires C<T>` void f2(T t); // west requires
+template<typename T> void f3(T t) `requires C<T>`; // east requires
+template<`C` T> void f1(T t);
+void f1(`C auto` t); // you need decltype(t) to obtain the type
+``` 
+
+---
+
+From Nicolai Josuttis' comprehensive talk at Meeting C++ 2024: 
+- `if constexpr` and concepts play well together
+
+```c++
+void add(auto & coll, auto const & val) {
+    if constexpr (requires { `coll.push_back(val);` }) {
+        `coll.push_back(val)`; // duplication of statement  
+    } else {
+        coll.insert(val); // hope for an insert dies last
+    }
+}
+
+std::vector<int> coll_1;
+std::set<int> coll_2;
+
+add(coll_1, 42); // calls push_back()
+add(coll_2, 42); // calls insert()
+``` 
+
+---
+
+```c++
+template <typename T, typename Val> concept `HasPushBack` = 
+    requires (T t, Val v) { 
+        { t.push_back(v) } -> std::same_as<void>; };
+
+void add(auto& coll, auto const& val) {
+    if constexpr (HasPushBack<decltype(coll), decltype(val)>) {
+        coll.push_back(val);  
+    } else {
+        coll.insert(val);  
+    }
+} // https://godbolt.org/z/Yrr6jYGrx
+
+std::vector<int> coll_1;
+std::set<int> coll_2;
+
+add(coll_1, 42);  // calls push_back()
+add(coll_2, 42);  // calls insert()
+``` 
+
+---
+
+# Concepts
+
+- Foonathan has you covered in https://www.think-cell.com/en/career/devblog/if-constexpr-requires-requires-requires
+
+
+---
+
+# How to Relax an Argument Constraint on a Method Parameter?  
 
 ```c++
 template <typename T> 
@@ -598,7 +730,7 @@ concept has_set = requires(T t, std::string s) {
 };
 ```
 
-The requirement for `s` is a little bit fuzzy here.
+The requirement for `s` could be a little more fuzzy.
 
 ???
 
@@ -609,7 +741,7 @@ https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAMzwBtMA7AQwFtMQBy
 # How to Enforce an Argument Constraint on a Method Parameter?  
 
 ```c++
-template <typename T, typename S = std::string> // TODO: FEHLER
+template <typename T, typename S = std::string> 
 concept has_set = requires(T t, S s) {
     { t.set(s) } -> std::same_as<void>;
 };
@@ -723,7 +855,7 @@ concept has_set = requires {
 };
 
 struct C2 
-{ // MSVC v19 fails! https://godbolt.org/z/6PYeGv4bW
+{ // `MSVC v19 fails!` https://godbolt.org/z/6PYeGv4bW
     void set([[maybe_unused]] std::`string_view` const & s) {}
     void set([[maybe_unused]] std::`string` const & s) {} 
 };
@@ -750,6 +882,64 @@ concept has_set = requires(T t, `/* what do we do here ? */` s) {
     { t.set(s) } -> std::same_as<void>;
 };
 ``` 
+
+---
+
+# How to Relax an Argument Constraint on a Method Parameter?  
+
+```c++
+#include <type_traits>
+#include <string_view>
+
+template <typename T, typename S> 
+concept has_set = `requires`(T t, S s) { 
+    `requires` std::`convertible_to`<S, std::string_view>;
+    { t.set(s) } -> std::same_as<void>;
+}; // https://godbolt.org/z/nPodYz8qG
+```
+
+The concept `convertible_to<From, To>` specifies that an expression of the same type and value category as those of `std::declval<From>()` can be implicitly and explicitly converted to the type To, and the two forms of conversion produce equal results.
+
+---
+
+# How to Relax an Argument Constraint
+
+```c++
+template <typename T, typename S>
+concept has_set = requires(T t, S s) {
+    `requires std::convertible_to<S, std::string_view>;`
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct C1
+{
+    void set([[maybe_unused]] `std::string const &` s) {}
+};
+
+
+static_assert(has_set<C1, `std::string const &`>);
+```
+
+---
+
+# How to Relax an Argument Constraint
+
+```c++
+template <typename T, typename S>
+concept has_set = 
+    std::convertible_to<S, std::string_view>
+    `&&` // <---------
+    requires(T t, S s) {
+        { t.set(s) } -> std::same_as<void>;
+    };
+
+struct C1
+{
+    void set([[maybe_unused]] std::string const & s) {}
+};
+// Can we get rid of the `explicit mention of set's argument?` 
+static_assert(has_set<C1, std::string const &>);
+```
 
 ---
 
@@ -797,7 +987,7 @@ concept has_set =
                                     std::string_view const &>
     || std::is_invocable_v<decltype(&T::set), T &, char const *> 
     ;
-
+ 
 struct C2
 {
     void set([[maybe_unused]] std::string_view const & s) {}
