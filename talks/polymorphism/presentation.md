@@ -600,6 +600,28 @@ concept has_set = requires(T t, std::string s) {
 
 The requirement for `s` is a little bit fuzzy here.
 
+???
+
+https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAMzwBtMA7AQwFtMQByARg9KtQYEAysib0QXACx8BBAKoBnTAAUAHpwAMvAFYTStJg1DIApACYAQuYukl9ZATwDKjdAGFUtAK4sGEjaSuADJ4DJgAcj4ARpjE/qQADqgKhE4MHt6%2B8UkpjgIhYZEsMXFcAXaYDmlCBEzEBBk%2BfmW2mPZ5DDV1BAUR0bHxCrX1jVktQ929RSX%2BAJS2qF7EyOwc5gDMocjeWADUJutuBACeCZgA%2BgTETIQKB9gmGgCCG1s7mPuHQ8ShwOcAbnhMAB3e6PF5mTYMbZePYHNzfX5g57ggiYFgJAxoz5HU6MVgfAAqpF2JzOzDYuyEnwAIrshugQCBEUZkU80NDMAkCLsEEwFOclDyDnTiJgAI5ePBihQQQmkknUhSzfYAdisz12WrVFlJADohRBlWq6QBae70giM5kE878%2BH/VB4dBg9Yal6qmkHd3g75eBy7NxccEmdXg7W7R3O%2BmYAgQEwAVisSZYTGOMXOXgYXiULoTXvzlutLOAuw5Q32ZgAbPSVaGrJ6Q423SHnhNHMg7QolPUIHyBUL4UH7rNva2nn6A24zE33RGo%2BgY3HE8mLKn0xcsznMHmC3SGUySwCgcCywIK%2BYa8b66GvSjmz627UO12e3H%2B4LY0OZ%2BtsKOWyiT7EP6PJuOss7htqC5LvGSYruuGZbrmiZ7kWh5XL8x4gmeDAXtWtY4RWDCoJgqgrNyOq3k2XoAS8T5MC%2B/Jvn2/KfgQQ7gb%2B/6PnRE5XCBgaSBBmpQU6i6Giu8Fpoh2bIfmKG7KEPJ4Cq5Y8sRpHkcKYaNveNE8e2eCdkxsTvqxg6HG4QlcWOgG8UpuypqEEB1mGdm3hw8y0JwCa8H4HBaKQqCcG41jWPSizLB8Gw8KQBCaJ58wANYgAmGh6hoACckgaJI6wABz5aqUiqus6xVvonCSH5CVBZwvAKCAATxQFnmkHAsAwIgKACPwxCppy5CUGgGJ0LEjWwCNCRjcQACSjL/MgCQJACXCZecWKYEM5yqFW0ioNyaSNRwAD0B6mJY1ibRWJ0AFpMLsJ0AOpiLQj0APJmG1EBTTN80oAYRhrS0B0dMdpoMiKF1WJYkK7BDVq0HgUQikjUTQ%2BFpovbQb1Y6RVwPaaZzoIYHbfb99BzYywBSGYQWHeenAIy66w0hjsPrPD2O409%2BPXPDxOk0ZXPEaaWZJcRwIMET1zAKmCgi6gYuyTuRN1ASaLEPD708LM8w7oQJDOnogPAP97M2GjE0uV5Pk1a1dUcB4DB9QNKy7AAaiesS7BAuCG1rMUqusJ1cL5cUJXrpApZIVZ6qqCZVhoCZcKqVZmAmCaqvllUcNVpAsCA1Z6pIqdmNnVZlWVVZpTn/mBcFHANU1EetfMHXdRTsRDT9qCjZTAOGDT%2BUtDQtCa41EBRLVUShHUxycLFs/MMQxzvVE2iVC1sUjWwgjvQwtALw7WBRF4wBuK9x2xVgA3AOIJ/SlveD/FttWkZUXhorVSltLVaPXFXh4LAtUMKF24LwV%2BxAojJEwDSdEQ8kZGEjnwAwwAFBexBO9cki9eD8EECIMQ7ApAyEEIoFQ6gHa6C4PoIeKAwqWH0Mja28xQZHSZpDVmFs4amnepzZmaNUbMKtBbLmr0uZ80JoLQQwssZkkwKaJGLBbgCwIAgMUTB0C8FQFAn4WAWGtHaGkFwDB3CeCaHoYIoQ%2BjFAGDQnIqQBCjGaIkZIjiGBTH6KUQxz8BBdBGOYsYPiqh%2BOGD0ax0w7G2DCc4vQEx6ieNsaUeYChIorAkLbDg4d67aM4LsVQ%2BUqymj2mWU2uwuD5T1FwDKvt/ZEEDpCLgsxeAtS0O3JAiwCAJC/j3LuxBwgEk4AUopJTthD3KXHdKgUDb1ONjQ/BwhRDiBIQs8haharUNIMCa4CRcGZOybVRu70v7dJ5KgKg%2BTCnFMkKU8ZFSqk1IgB4fuPsg4tMjvMBAmBNEDBcrnfOhczCSD1OsbO6wEz5UkJIFOWd8rlVIDkx2zcaGtO%2Bl1PsPUXlkAoL3LFIBFrLVWuta6BAdp7T4HQCelBp4O2XvPXBpA6Wr3XpvBwtVd6MAIAfI%2BtVT7n0vjja%2BvBb6INWDfJ%2BVRX7HWmaoT%2B38IHkEEH/BVAD57ANWIFMBDKoEwKUPAu%2BSDQBt1QUwdBmDgTYMYAyhZhDlnSFWUodZVCi60OQRbJhUQDFsMZqdc6DCLAksevdD6X0gq6OdG/SAKS2i%2BL8BAVwsSaFWMKF4vQDiOiJtcbkNIiSZg0IqCEzoMTAkuILR0fx4SU1JLicWzIpawm5rsSktJxD9n2wbnk3aNyWAKEWpGNaepA1%2B3wPUys6wmnvONRizppzel92mpTAZbAhklJ7X2/4A6SW8BmUbRk8zZC2uIfa2QazKGBV0HTbZTBdkQLbQiw5nBjldK/rsc5%2BTV29uQP2zKg6GJbR5E8%2BdM0x1mGaa3NpmSAVFzMHqBMeVJBmHypCTKSc4UZ3vQ7RuzdmooI7hivpc68U0wQxS8e41qUzznqvBlTK14by3uyvue8uWH2PoFPlF8r4MpFUYB%2B7GJWOCle/WVyAv4at4L/byDtVVAIwOJuKPxwGxR1bA/ViDfgoKoGgjBJ5LX%2BVijapZR7SHyEdWenQIB1iuuMP6j1XqGa4Q4VaKG/qeHcwkaoAmAsdxCy/UTNRGjFy8PWNo8N%2Bj4DRqMc4eNpjM3JpsXmrN7jM3ppzRE1N%2BaY2ForZmst1QG3perfm2tFjiuTEK3m5tSx0lNNzgczDnarklOAMgL9Ug9RmFqSOkgY6J3ge%2Bh0k5PScV9KXasYZ1zdgtba%2BsKp27ut6L0IZohEhj1kLMxsyzWydl7Lq%2B23JHAn2nNfRcibzXWvlOBZ1wDWKx3rDA6iqOUmoPFyrEnTK6xY4j3yplUqCY6aIqw7YPQj3kogEkD%2BzKydMqJy4FwRD/23vSCkyFjDHam79ae5wUNhcygBEB/VTH8woEpGcJIIAA%3D%3D
+
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string> // TODO: FEHLER
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct C1
+{
+    void set([[maybe_unused]] `std::string` const & s) {}
+};
+
+static_assert(has_set<C1>);
+```
+
 ---
 
 # How to Enforce an Argument Constraint on a Method Parameter?  
@@ -610,36 +632,104 @@ concept has_set = requires(T t, S s) {
     { t.set(s) } -> std::same_as<void>;
 };
 
-struct C1
-{
-    void set([[maybe_unused]] std::string const & s) {}
-};
-
-static_assert(has_set<C1>);
-
 struct C2
 {
-    void set([[maybe_unused]] std::string_view const & s) {}
+    void set([[maybe_unused]] `std::string_view` const & s) {}
 };
 
 static_assert(has_set<C2>);
+```
+
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string>
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
 
 struct C3
 {
-    void set([[maybe_unused]] std::string_view const & s) const noexcept {}
+    void set([[maybe_unused]] `std::string_view` const & s) 
+        const `noexcept` {}
 };
 
 static_assert(has_set<C3>);
+```
 
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string>
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
 
 struct C4
 {
     void set([[maybe_unused]] int i) const noexcept {}
 };
 
-static_assert(has_set<C4>);
+static_assert(`!`has_set<C4>); // Not here. TODO: Explain 
+```
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template<typename T>
+concept has_set = requires {
+    { `static_cast<void(T::*)(std::string const &)>(&T::set)` };
+};
+
+struct C1
+{
+    void set([[maybe_unused]] std::string const & s) {}
+};
+
+static_assert(has_set<C1>);
 ```
 
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template<typename T>
+concept has_set = requires {
+    { static_cast<void(T::*)(std::`string` const &)>(&T::set) };
+};
+
+struct C2
+{
+    void set([[maybe_unused]] std::`string_view` const & s) {}
+};
+
+static_assert(`!`has_set<C2>);
+```
+
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template<typename T>
+concept has_set = requires {
+    { static_cast<void(T::*)(std::`string` const &)>(&T::set) };
+};
+
+struct C2 
+{ // MSVC v19 fails! https://godbolt.org/z/6PYeGv4bW
+    void set([[maybe_unused]] std::`string_view` const & s) {}
+    void set([[maybe_unused]] std::`string` const & s) {} 
+};
+
+static_assert(has_set<C2>);
+```
 
 ---
 
@@ -663,108 +753,59 @@ concept has_set = requires(T t, `/* what do we do here ? */` s) {
 
 ---
 
-# How to Enforce an Argument Constraint on a Method Parameter?  
+# How to Relax an Argument Constraint on a Method Parameter?  
 
 ```c++
-template <typename T> 
-concept has_set = requires(T t, std::string s) {
-    { t.set(s) } -> std::same_as<void>;
+template <typename T>
+concept has_set = requires(T t) {
+    { t.set(
+        [](){ // set should take one of these 3 args
+            struct { // hidden unnamed struct 
+                operator std::`string_view`();
+                operator std::`string`();
+                operator `char *`(); } s; 
+            return s; }`()` // execute lambda
+      ) } -> std::same_as<void>;
 };
 ```
 
-See https://stackoverflow.com/a/79130967/1528210
-
-```c++
-template <typename T, `typename S = std::string`>
-concept has_set = requires(T t, S s) {
-    `requires std::convertible_to<S, std::string_view>;`
-    { t.set(s) } -> std::same_as<void>;
-};
-``` 
-
 ---
 
-# How to Enforce an Argument Constraint on a Method Parameter?  
+# How to Relax an Argument Constraint on a Method Parameter?  
 
 ```c++
-// Default parameter must fulfill the constraint 
-// --------------------------------VVVVVVVVVVV
-template <typename T, `typename S = std::string`>
-concept has_set = requires(T t, S s) {
-    // additional constraint
-    `requires std::convertible_to<S, std::string_view>;`
-    { t.set(s) } -> std::same_as<void>;
+template <typename T>
+concept has_set = requires(T t) {
+    { t.set(
+        [](){ // set should take `any argument`
+            struct { // hidden unnamed struct 
+                `template <typename T> operator T();`
+            return s; }() 
+      ) } -> std::same_as<void>;
 };
-``` 
-
-```c++
-void use(has_set auto & o) {
-     o.set("aaa");
-}
 ```
 
-
 ---
 
+# How to Relax an Argument Constraint  
+
 ```c++
-// See https://stackoverflow.com/a/79130967/1528210
-#include <type_traits>
-#include <string_view>
-#include <string>
+template <typename T>
+concept has_set = 
+    std::is_invocable_v<decltype(&T::set), T &, std::string>
+    || std::is_invocable_v<decltype(&T::set), T &, 
+                                    std::string_view const &>
+    || std::is_invocable_v<decltype(&T::set), T &, char const *> 
+    ;
 
-template <typename T, typename S = std::string>
-concept has_set = requires(T t, S s) {
-    requires std::convertible_to<S, std::string_view>;
-    { t.set(s) } -> std::same_as<void>;
-};
-
-struct HasSetClass
-{
-    void set([[maybe_unused]] std::string const & s) {}
-};
-
-struct HasSetClass2
+struct C2
 {
     void set([[maybe_unused]] std::string_view const & s) {}
+    // void set([[maybe_unused]] std::string s) {} // TODO: WHY??
 };
 
-struct HasSetClass3
-{
-    void set([[maybe_unused]] std::string_view const & s) const noexcept {}
-};
-
-
-void use(has_set auto & o)
-{
-     o.set("aaa");
-}
-
-int main() {
-    HasSetClass2 a2;
-    use(a2);
-
-    HasSetClass3 a3;
-    use(a3);
-
-}
-```
-
----
-
-```c++
-#include <concepts>
-#include <string_view>
-
-
-template<typename T>
-concept has_set = requires {
-    // Use the static cast to support classes that 
-    // have multiple set overloads
-    { static_cast<void(T::*)(std::string_view)>(&T::set) };
-};
-```
-
-
+static_assert(has_set<C2>);
+``` 
 
 ---
 
