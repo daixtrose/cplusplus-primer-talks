@@ -54,26 +54,46 @@ expect(duration.count() < 40,
 
 ---
 
-.col-6[
+background-image: url(images/2024-03-30_Amsterdam_X-T3_DSCF0516.jpg)
 
-## Repo
+.col-5[
 
-https://github.com/daixtrose/cplusplus-primer/tree/main/polymorphism
+## Code
 
-<br>
+> https://github.com/daixtrose/cplusplus-primer/tree/main/polymorphism
+
 <img id="url-repo">
 
 ]
-
-.col-6[
+.col-2[ 
+    ![]()
+]
+.col-5[
 
 ## Slides
 
-https://www.daixtrose.de/talks/crazy-generic-lambdas/crazy-generic-lambddas.html
+> https://www.daixtrose.de/talks/crazy-generic-lambdas/crazy-generic-lambddas.html
 
 <img id="url-slides">
 
 ]
+
+---
+
+background-image: url(images/2024-03-29_Amsterdam_X-T3_DSCF0382.jpg)
+class: impact-large
+
+## Fotos are mine
+
+Published under [.white[CC BY-SA]](https://creativecommons.org/licenses/by-sa/4.0/legalcode) .image-fixed-40[![](images/CC_BY-SA_88x31.png)]
+
+---
+
+background-image: url(images/IMG_0323.JPEG)
+
+# .white[Ready for Takeoff?]
+
+
 
 ---
 
@@ -150,13 +170,14 @@ public:
 ```
 
 ```c++
-class Impl : public ISuperCoolFeatures {
+class Impl : `public` ISuperCoolFeatures {
 
 // ... private members and member functions omitted ...
 
 public:
     std::string coolFeature() const `override` { /* ... */ }
     void set(std::string s) `override` { /* ... */ }
+    // No need to overwrite defaulted base class destructor! 
 };
 ```
 
@@ -207,8 +228,8 @@ namespace classic {
 std::string consume(ISuperCoolFeatures& f)
 {
     auto answer = "42";
-    f.set(answer);
-    return "The answer to all questions is " + f.coolFeature();
+    f.`set`(answer); // Slideware! Never do side effects in prod! 
+    return "The answer to all questions is " + f.`coolFeature`();
 }
 
 } // namespace classic
@@ -228,7 +249,7 @@ class: impact
 
 ---
 
-# Modern Approach
+# Modern Approach: Concepts
 
 ```c++
 template <typename T> `concept` has_super_cool_features 
@@ -237,12 +258,18 @@ template <typename T> `concept` has_super_cool_features
     { t.set(s) } -> std::`same_as`<void>;
   };
 ```
-
-We then declare a **template** function that takes arguments whose type adheres to the **constraints** defined by the **concept**:
+instead of 
 
 ```c++
-std::string consume(has_super_cool_features `auto`& s);
+class ISuperCoolFeatures {
+public:
+    virtual std::string coolFeature() const = 0; 
+    virtual void set(std::string s) = 0; 
+    virtual ~ISuperCoolFeatures() = default; 
+};
 ```
+
+
 
 
 ???
@@ -265,7 +292,7 @@ In this example, we have defined such an interface specification as a concept
 ```c++
 namespace modern {
 
-class Impl /* : no inheritance here! */ {
+class Impl /* : `no inheritance` here! */ {
 private:
     std::string s_ { "<default value>" }; 
 
@@ -340,6 +367,26 @@ The **implementation** of this **template** function is .highlight-bg[not visibl
 
 ---
 
+# Modern `consume`: Splitting the Code   
+
+```
+├── include
+│   └── polymorphism
+│       ├── `consume_class_that_adheres_to_concept.hpp`
+│       ├── consume_class_with_interface.hpp
+│       ├── has_super_cool_features.hpp
+│       ├── i_super_cool_features.hpp
+│       ├── impl_with_interface.hpp
+│       └── impl_without_interface.hpp
+├── src
+    ├── `consume_class_that_adheres_to_concept.cpp`
+    ├── `consume_class_that_adheres_to_concept.ipp`
+    ├── consume_class_with_interface.cpp
+    └── main.cpp
+```
+
+---
+
 # Modern `consume` 
 
 Content of `consume_class_that_adheres_to_concept.`.highlight-bg[`ipp`]:
@@ -379,10 +426,10 @@ template std::string consume<Impl>(Impl&);
 
 ---
 
-background-image: url(images/IMG_0323.JPEG)
+background-image: url(images/DSC_0197.JPG)
 class: impact
 
-# Pros<br>&<br>Cons
+# Pros & Cons
 
 ---
 
@@ -410,7 +457,7 @@ template <typename T>
 concept has_super_cool_features = requires(T t, std::string s) {
     { t.coolFeature() } 
       -> std::convertible_to<`std::string_view`>;
-    { t.set(s) } -> std::same_as<void>; };
+    { t.set(`s`) } -> std::same_as<void>; };
 ```
 
 
@@ -489,69 +536,7 @@ concept has_cool_feature = requires(T t, std::string s) {
 template <typename T> 
 concept has_super_cool_features = 
     // order matters for short circuit!
-    has_cool_feature<T> && has_set<T>;
-```
-
----
-
-# How to Enforce an Argument Constraint on a Method Parameter?  
-
-```c++
-template <typename T> 
-concept has_set = requires(T t, std::string s) {
-    { t.set(s) } -> std::same_as<void>;
-};
-```
-
-The requirement for `s` could be relaxed. <br>E.g. it suffices if it is convertible to `std::stringview`. 
-
-```c++
-template <typename T> 
-concept has_set = requires(T t, /* what do we do here ? */ s) {
-    { t.set(s) } -> std::same_as<void>;
-};
-``` 
-
----
-
-# How to Enforce an Argument Constraint on a Method Parameter?  
-
-```c++
-template <typename T> 
-concept has_set = requires(T t, std::string s) {
-    { t.set(s) } -> std::same_as<void>;
-};
-```
-
-See https://stackoverflow.com/a/79130967/1528210
-
-```c++
-template <typename T, `typename S = std::string`>
-concept has_set = requires(T t, S s) {
-    `requires std::convertible_to<S, std::string_view>;`
-    { t.set(s) } -> std::same_as<void>;
-};
-``` 
-
----
-
-# How to Enforce an Argument Constraint on a Method Parameter?  
-
-```c++
-// Default parameter must fulfill the constraint 
-// --------------------------------VVVVVVVVVVV
-template <typename T, `typename S = std::string`>
-concept has_set = requires(T t, S s) {
-    // additional constraint
-    `requires std::convertible_to<S, std::string_view>;`
-    { t.set(s) } -> std::same_as<void>;
-};
-``` 
-
-```c++
-void use(has_set auto & o) {
-     o.set("aaa");
-}
+    has_cool_feature<T> `&&` has_set<T>;
 ```
 
 ---
@@ -602,6 +587,122 @@ struct Mock {
         expect("42"s == impl.coolFeature()); 
     };
 ```
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, std::string s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+```
+
+The requirement for `s` is a little bit fuzzy here.
+
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string>
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct C1
+{
+    void set([[maybe_unused]] std::string const & s) {}
+};
+
+static_assert(has_set<C1>);
+
+struct C2
+{
+    void set([[maybe_unused]] std::string_view const & s) {}
+};
+
+static_assert(has_set<C2>);
+
+struct C3
+{
+    void set([[maybe_unused]] std::string_view const & s) const noexcept {}
+};
+
+static_assert(has_set<C3>);
+
+
+struct C4
+{
+    void set([[maybe_unused]] int i) const noexcept {}
+};
+
+static_assert(has_set<C4>);
+```
+
+
+---
+
+# How to Relax an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, std::string s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+```
+
+The requirement for `s` could be relaxed. 
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, `/* what do we do here ? */` s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+``` 
+
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, std::string s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+```
+
+See https://stackoverflow.com/a/79130967/1528210
+
+```c++
+template <typename T, `typename S = std::string`>
+concept has_set = requires(T t, S s) {
+    `requires std::convertible_to<S, std::string_view>;`
+    { t.set(s) } -> std::same_as<void>;
+};
+``` 
+
+---
+
+# How to Enforce an Argument Constraint on a Method Parameter?  
+
+```c++
+// Default parameter must fulfill the constraint 
+// --------------------------------VVVVVVVVVVV
+template <typename T, `typename S = std::string`>
+concept has_set = requires(T t, S s) {
+    // additional constraint
+    `requires std::convertible_to<S, std::string_view>;`
+    { t.set(s) } -> std::same_as<void>;
+};
+``` 
+
+```c++
+void use(has_set auto & o) {
+     o.set("aaa");
+}
+```
+
 
 ---
 
@@ -664,141 +765,6 @@ concept has_set = requires {
 ```
 
 
----
-
-# Enthusiasm First
-
-> .primary[#### Let us imagine we are in a startup which will create a pacemaker.]
-
-.col-8[
-
-## Yes, we can!
-
-- We will use the greatest and latest version of **Modern C++**.
-- Where do we begin?
-- What is our next step?
-- Electronics or software first?
-- ...
-
-## Where are the *requirements*?
-  
-]
-.col-4[
-
-]
-
----
-
-# The basics
-
-## Getting started
-
-Use [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) to write your slides. Don't be afraid, it's really easy!
-
---
-
-## Making points
-
-Look how you can make *some* points:
---
-
-- Create slides with your **favorite text editor**
---
-
-- Focus on your **content**, not the tool
---
-
-- You can finally be **productive**!
-
----
-
-# There's more
-
-## Syntax highlighting
-
-You can also add `code` to your slides:
-```html
-<div class="impact">Some HTML code</div>
-```
-
-## CSS classes
-
-You can use .alt[shortcut] syntax to apply .big[some style!]
-
-...or just <span class="alt">HTML</span> if you prefer.
-
----
-
-# And more...
-
-## 12-column grid layout
-
-Use to the included **grid layout** classes to split content easily:
-.col-6[
-  ### Left column
-
-  - I'm on the left
-  - It's neat!
-]
-.col-6[
-  ### Right column
-
-  - I'm on the right
-  - I love it!
-]
-
-## Learn the tricks
-
-See the [wiki](https://github.com/gnab/remark/wiki) to learn more of what you can do with .alt[Remark.js]
-
----
-
-# And more...
-
-## 12-column grid layout
-
-Use to the included **grid layout** classes to split content easily:
-.col-8[
-  ### Left column
-
-  - I'm on the left
-  - It's neat!
-]
-.col-4[
-  ### Right column
-
-  - I'm on the right
-  - I love it!
-]
-
-
----
-
-# Some C++ Code
-
-```c++
-import std;
-
-template<std::size_t SIZE>
-class Foo {};
-
-template <`template<auto>` class T, auto K>
-auto extractSize(const T<K>&) {
-*    return K;
-}
-
-int main() {
-    // The new way of life
-    std::println("Hello World"); 
-}
-```
-
----
-
-template: roentgen
-class: middle
-
-# Thank You for your attention!
 
 ---
 
@@ -1076,3 +1042,20 @@ int main() {
 
 ---
 
+We then declare a **template** function that takes arguments whose type adheres to the **constraints** defined by the **concept**:
+
+```c++
+std::string consume(has_super_cool_features `auto`& s);
+```
+TODO
+
+```c++
+template <has_super_cool_features T> std::string consume(T & s);
+```
+
+---
+
+template: roentgen
+class: middle
+
+# Thank You for your attention!
