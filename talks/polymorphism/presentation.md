@@ -242,6 +242,157 @@ std::cerr << classic::consume(i) << '\n';
 
 ---
 
+background-image: url(images/IMG_2077.JPEG)
+class: impact
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+## Hop(e) on the Concepts Train 
+
+<br>
+<br>
+
+https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0734r0.pdf
+
+---
+
+# Concepts
+
+- This feature was one of the earlier features that Bjarne wanted to have in the language (see https://isocpp.org/blog/2016/02/a-bit-of-background-for-concepts-and-cpp17-bjarne-stroustrup)
+  >  In about `1987`, I tried to design templates with proper interfaces. I failed. I wanted three properties for templates: full generality/expressiveness, zero overhead compared to hand coding, and good interfaces. I got Turing completeness, better than hand-coding performance, and lousy interfaces. The lack of well-specified interfaces led to the spectacularly bad error messages we saw over the years. The other two properties made templates a run-away success.
+  > The solution to the interface specification problem was named “concepts” by Alex Stepanov. 
+
+A concept is a named set of requirements. The definition of a concept has the form
+
+```
+template <template-parameter-list>
+concept concept-name = constraint-expression;
+```
+
+---
+
+# Concepts
+
+Implicit **SFINAE**: If the expressions in the so-called requires expression are valid, then the template parameter `T` adheres to the constraint:
+
+```c++
+template<typename T>
+concept R = requires (T i) {
+    typename T::type; // T must have a member named type
+    // special syntax to describe the return value 
+    // of the expression in {}
+    {*i} -> std::same_as<const typename T::type&>;
+    // p0734r0.pdf mentions 
+    // {*i} -> const typename T::type&;
+    // but this gets rejected by all 3 major compilers!
+};
+```
+
+---
+
+# Concepts
+
+```c++
+ // A concept is a named requirement  
+ template<typename T>
+ concept C = `requires (T x) { x + x; }`;
+ //          |- requires `expression` -|
+
+ template<typename T> `requires C<T>` // <-- requires `clause`
+ T add(T a, T b) { return a + b; }
+```
+
+Putting it together in one for a `requires requires`:
+
+```c++
+ template<typename T>
+ `requires requires` (T x) { x + x; }
+ T add(T a, T b) { return a + b; }
+```
+
+---
+
+# Concepts
+
+```c++
+template<typename T> concept C = 
+    /* sth that evaluates to true or a requires expression */;
+```
+e.g.
+```c++
+template<typename T> concept C = sizeof(T) > 2;
+```
+
+Four different ways to say the same thing
+
+```c++
+template<typename T> `requires C<T>` void f2(T t); // west requires
+template<typename T> void f3(T t) `requires C<T>`; // east requires
+template<`C` T> void f1(T t);
+void f1(`C auto` t); // you need decltype(t) to obtain the type
+``` 
+
+---
+
+From Nicolai Josuttis' comprehensive talk at Meeting C++ 2024: 
+- `if constexpr` and concepts play well together
+
+```c++
+void add(auto & coll, auto const & val) {
+    if constexpr (requires { `coll.push_back(val);` }) {
+        `coll.push_back(val)`; // duplication of statement  
+    } else {
+        coll.insert(val); // hope for an insert dies last
+    }
+}
+
+std::vector<int> coll_1;
+std::set<int> coll_2;
+
+add(coll_1, 42); // calls push_back()
+add(coll_2, 42); // calls insert()
+``` 
+
+---
+
+```c++
+template <typename T, typename Val> concept `HasPushBack` = 
+    requires (T t, Val v) { 
+        { t.push_back(v) } -> std::same_as<void>; };
+
+void add(auto& coll, auto const& val) {
+    if constexpr (HasPushBack<decltype(coll), decltype(val)>) {
+        coll.push_back(val);  
+    } else {
+        coll.insert(val);  
+    }
+} // https://godbolt.org/z/Yrr6jYGrx
+
+std::vector<int> coll_1;
+std::set<int> coll_2;
+
+add(coll_1, 42);  // calls push_back()
+add(coll_2, 42);  // calls insert()
+``` 
+
+---
+
+# Concepts
+
+- There is more to the game. 
+- Foonathan shows some interesting aspects in https://www.think-cell.com/en/career/devblog/if-constexpr-requires-requires-requires
+
+
+
+---
+
 background-image: url(images/IMG_0321.JPEG)
 class: impact
 
@@ -587,137 +738,6 @@ struct Mock {
         expect("42"s == impl.coolFeature()); 
     };
 ```
-
----
-
-background-image: url(images/IMG_2077.JPEG)
-class: impact
-
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-
-## Hop on the Concepts Train 
-
-<br>
-<br>
-
-https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0734r0.pdf
-
----
-
-# Concepts
-
-Implicit **SFINAE**: If it compiles, then template parameter `T` adheres to the constraint:
-
-```c++
-template<typename T>
-concept R = `requires` (T i) {
-    typename T::type;
-    // special syntax to describe the return value 
-    // of the expression in {}
-    `{`*i`} ->` const typename T::type&;
-};
-```
-
----
-
-# Concepts
-
-```c++
- // A concept is a named requirement  
- template<typename T>
- concept C = `requires (T x) { x + x; }`;
- //          |- requires `expression` -|
-
- template<typename T> `requires C<T>` // <-- requires `clause`
- T add(T a, T b) { return a + b; }
-```
-
-Putting it together in one for a `requires requires`:
-
-```c++
- template<typename T>
- `requires requires` (T x) { x + x; }
- T add(T a, T b) { return a + b; }
-```
-
----
-
-# Concepts
-
-```c++
-template<typename T> concept C = 
-    /* sth that evaluates to true or a requires expression */;
-```
-e.g.
-```c++
-template<typename T> concept C = sizeof(T) > 2;
-```
-
-Four different ways to say the same thing
-
-```c++
-template<typename T> `requires C<T>` void f2(T t); // west requires
-template<typename T> void f3(T t) `requires C<T>`; // east requires
-template<`C` T> void f1(T t);
-void f1(`C auto` t); // you need decltype(t) to obtain the type
-``` 
-
----
-
-From Nicolai Josuttis' comprehensive talk at Meeting C++ 2024: 
-- `if constexpr` and concepts play well together
-
-```c++
-void add(auto & coll, auto const & val) {
-    if constexpr (requires { `coll.push_back(val);` }) {
-        `coll.push_back(val)`; // duplication of statement  
-    } else {
-        coll.insert(val); // hope for an insert dies last
-    }
-}
-
-std::vector<int> coll_1;
-std::set<int> coll_2;
-
-add(coll_1, 42); // calls push_back()
-add(coll_2, 42); // calls insert()
-``` 
-
----
-
-```c++
-template <typename T, typename Val> concept `HasPushBack` = 
-    requires (T t, Val v) { 
-        { t.push_back(v) } -> std::same_as<void>; };
-
-void add(auto& coll, auto const& val) {
-    if constexpr (HasPushBack<decltype(coll), decltype(val)>) {
-        coll.push_back(val);  
-    } else {
-        coll.insert(val);  
-    }
-} // https://godbolt.org/z/Yrr6jYGrx
-
-std::vector<int> coll_1;
-std::set<int> coll_2;
-
-add(coll_1, 42);  // calls push_back()
-add(coll_2, 42);  // calls insert()
-``` 
-
----
-
-# Concepts
-
-- Foonathan has you covered in https://www.think-cell.com/en/career/devblog/if-constexpr-requires-requires-requires
-
 
 ---
 
