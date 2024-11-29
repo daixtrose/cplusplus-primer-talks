@@ -170,10 +170,10 @@ public:
 ```
 
 ```c++
+// Liskov substitution principle: 
+// public inheritance models an 'is-a' relationship 
 class Impl : `public` ISuperCoolFeatures {
-
 // ... private members and member functions omitted ...
-
 public:
     std::string coolFeature() const `override` { /* ... */ }
     void set(std::string s) `override` { /* ... */ }
@@ -266,8 +266,17 @@ https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0734r0.pdf
 # Concepts
 
 - This feature was one of the earlier features that Bjarne wanted to have in the language (see https://isocpp.org/blog/2016/02/a-bit-of-background-for-concepts-and-cpp17-bjarne-stroustrup)
-  >  In about `1987`, I tried to design templates with proper interfaces. I failed. I wanted three properties for templates: full generality/expressiveness, zero overhead compared to hand coding, and good interfaces. I got Turing completeness, better than hand-coding performance, and lousy interfaces. The lack of well-specified interfaces led to the spectacularly bad error messages we saw over the years. The other two properties made templates a run-away success.
+  >  In about `1987`, I tried to design templates with proper interfaces. I failed. I wanted three properties for templates: 
+  > - full generality/expressiveness, 
+  > - zero overhead compared to hand coding, and 
+  > - `good interfaces`. 
+  >
+  > I got Turing completeness, better than hand-coding performance, and lousy interfaces. `The lack of well-specified interfaces led to the spectacularly bad error messages we saw over the years.` The other two properties made templates a run-away success.
   > The solution to the interface specification problem was named “concepts” by Alex Stepanov. 
+
+---
+
+# Concepts
 
 A concept is a named set of requirements. The definition of a concept has the form
 
@@ -368,7 +377,7 @@ template <typename T, typename Val> concept `HasPushBack` =
         { t.push_back(v) } -> std::same_as<void>; };
 
 void add(auto& coll, auto const& val) {
-    if constexpr (HasPushBack<decltype(coll), decltype(val)>) {
+    if constexpr (`HasPushBack<decltype(coll),` `decltype(val)>`) {
         coll.push_back(val);  
     } else {
         coll.insert(val);  
@@ -386,8 +395,100 @@ add(coll_2, 42);  // calls insert()
 
 # Concepts
 
-- There is more to the game. 
-- Foonathan shows some interesting aspects in https://www.think-cell.com/en/career/devblog/if-constexpr-requires-requires-requires
+The C++ Standard has predefined concepts, see https://en.cppreference.com/w/cpp/named_req. Example:
+
+```c++
+template< class From, class To>
+concept convertible_to =
+    std::is_convertible_v<From, To> &&
+    requires {
+        static_cast<To>(std::declval<From>());
+    };
+```
+
+The concept `convertible_to<From, To>` specifies that an expression of the same type and value category as those of `std::declval<From>()` can be implicitly and explicitly converted to the type To, and the two forms of conversion produce equal results. 
+
+---
+
+# Concepts - More Than One Argument
+
+```c++
+// Two arguments!
+template< class `From`, class `To`> concept convertible_to;
+
+// - `To` is explicitly set, like in a partial specialization
+// - `From` will be assigned from `T`.
+// Assignment is from left to right. 
+// T is first argument to the concept.
+template <std::convertible_to<`std::string`> T>
+void foo(T const & x) { // east const forever, Daniel!
+    std::string v = x;
+}
+```
+
+If you want to use `template<C T>`, then C must have one "open" argument. 
+
+---
+
+# Concepts - More Than Two Arguments 
+
+```c++
+#include <concepts>
+
+template <typename A, typename B, typename C>
+concept something = 
+    std::semiregular<A>
+    && std::same_as<int, B>
+    && std::same_as<double, C>;
+
+// B -> int, C -> double     
+template <something<int, double> T> 
+void foo (T t) { /* ... */ }
+
+int main() {
+    // A -> const char*
+    foo("hello");
+}
+```
+
+---
+
+# Concepts - More Than Two Arguments 
+
+```c++
+#include <concepts>
+
+template <typename A, typename B, typename C>
+concept something = 
+    // A can be copied, moved, swapped, and default constructed
+    std::semiregular<A> 
+    && 
+    // B is both semiregular and equality_comparable
+    std::regular<B> 
+    && 
+    requires (A a, C c) { a = c; };
+
+// A -> T, B -> int, C -> double
+template <something<int, double> T> 
+void foo (T t) { /* ... */ }
+```
+
+---
+
+background-image: url(images/20150728_114910.jpg)
+
+
+# .white[Concepts - a Summary]
+
+.huge[
+- Concepts describe **constraints** on a type.
+- Concepts describe the **interface** of a type (in a sloppy way).
+
+- There is more to learn.] 
+
+.col-12[
+    Read @Foonathan's article https://www.think-cell.com/en/career/devblog/if-constexpr-requires-requires-requires    
+]
 
 
 
@@ -400,16 +501,7 @@ class: impact
 
 ---
 
-# Modern Approach: Concepts
-
-```c++
-template <typename T> `concept` has_super_cool_features 
-  = `requires`(T t, std::string s) {
-    { t.coolFeature() } -> std::`convertible_to`<std::string>;
-    { t.set(s) } -> std::`same_as`<void>;
-  };
-```
-instead of 
+Instead of an abstract base class 
 
 ```c++
 class ISuperCoolFeatures {
@@ -418,6 +510,16 @@ public:
     virtual void set(std::string s) = 0; 
     virtual ~ISuperCoolFeatures() = default; 
 };
+```
+
+use a constraint (expressed via a concept)
+
+```c++
+template <typename T> `concept` has_super_cool_features 
+  = `requires`(T t, std::string s) {
+    { t.coolFeature() } -> std::`convertible_to`<std::string>;
+    { t.set(s) } -> std::`same_as`<void>;
+  };
 ```
 
 
@@ -696,7 +798,9 @@ concept has_super_cool_features =
 
 - Showing an example with [µt](https://github.com/boost-ext/ut) as testing framework for no good reason. It looks promising and lightweight, and it was written by [Krzysztof Jusiak](https://github.com/krzysztof-jusiak) whom I adore for his outstanding C++ programming skills and his [C++ Tip of The Week](https://github.com/tip-of-the-week/cpp) collection of crazy C++ riddles.
 - [µt](https://github.com/boost-ext/ut) does not provide a mocking framework.
-- I haven't found a **mocking framework that works with concepts**.
+  - Watch Peter Sommerlad's CppCon 2017 talk "**Mocking Frameworks considered harmful**" on https://www.youtube.com/watch?v=uhuHZXTRfH4 
+- I haven't found a **mocking framework that works with concepts**. 
+  - This is left as homework for the audience.  
 
 ---
 
@@ -741,93 +845,12 @@ struct Mock {
 
 ---
 
-# How to Relax an Argument Constraint on a Method Parameter?  
+background-image: url(images/20140920_100420.jpg)
+background-size: cover
 
-```c++
-template <typename T> 
-concept has_set = requires(T t, std::string s) {
-    { t.set(s) } -> std::same_as<void>;
-};
-```
+# .white[Details]
 
-The requirement for `s` could be a little more fuzzy.
 
-???
-
-https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAMzwBtMA7AQwFtMQByARg9KtQYEAysib0QXACx8BBAKoBnTAAUAHpwAMvAFYTStJg1DIApACYAQuYukl9ZATwDKjdAGFUtAK4sGEjaSuADJ4DJgAcj4ARpjE/qQADqgKhE4MHt6%2B8UkpjgIhYZEsMXFcAXaYDmlCBEzEBBk%2BfmW2mPZ5DDV1BAUR0bHxCrX1jVktQ929RSX%2BAJS2qF7EyOwc5gDMocjeWADUJutuBACeCZgA%2BgTETIQKB9gmGgCCG1s7mPuHQ8ShwOcAbnhMAB3e6PF5mTYMbZePYHNzfX5g57ggiYFgJAxoz5HU6MVgfAAqpF2JzOzDYuyEnwAIrshugQCBEUZkU80NDMAkCLsEEwFOclDyDnTiJgAI5ePBihQQQmkknUhSzfYAdisz12WrVFlJADohRBlWq6QBae70giM5kE878%2BH/VB4dBg9Yal6qmkHd3g75eBy7NxccEmdXg7W7R3O%2BmYAgQEwAVisSZYTGOMXOXgYXiULoTXvzlutLOAuw5Q32ZgAbPSVaGrJ6Q423SHnhNHMg7QolPUIHyBUL4UH7rNva2nn6A24zE33RGo%2BgY3HE8mLKn0xcsznMHmC3SGUySwCgcCywIK%2BYa8b66GvSjmz627UO12e3H%2B4LY0OZ%2BtsKOWyiT7EP6PJuOss7htqC5LvGSYruuGZbrmiZ7kWh5XL8x4gmeDAXtWtY4RWDCoJgqgrNyOq3k2XoAS8T5MC%2B/Jvn2/KfgQQ7gb%2B/6PnRE5XCBgaSBBmpQU6i6Giu8Fpoh2bIfmKG7KEPJ4Cq5Y8sRpHkcKYaNveNE8e2eCdkxsTvqxg6HG4QlcWOgG8UpuypqEEB1mGdm3hw8y0JwCa8H4HBaKQqCcG41jWPSizLB8Gw8KQBCaJ58wANYgAmGh6hoACckgaJI6wABz5aqUiqus6xVvonCSH5CVBZwvAKCAATxQFnmkHAsAwIgKACPwxCppy5CUGgGJ0LEjWwCNCRjcQACSjL/MgCQJACXCZecWKYEM5yqFW0ioNyaSNRwAD0B6mJY1ibRWJ0AFpMLsJ0AOpiLQj0APJmG1EBTTN80oAYRhrS0B0dMdpoMiKF1WJYkK7BDVq0HgUQikjUTQ%2BFpovbQb1Y6RVwPaaZzoIYHbfb99BzYywBSGYQWHeenAIy66w0hjsPrPD2O409%2BPXPDxOk0ZXPEaaWZJcRwIMET1zAKmCgi6gYuyTuRN1ASaLEPD708LM8w7oQJDOnogPAP97M2GjE0uV5Pk1a1dUcB4DB9QNKy7AAaiesS7BAuCG1rMUqusJ1cL5cUJXrpApZIVZ6qqCZVhoCZcKqVZmAmCaqvllUcNVpAsCA1Z6pIqdmNnVZlWVVZpTn/mBcFHANU1EetfMHXdRTsRDT9qCjZTAOGDT%2BUtDQtCa41EBRLVUShHUxycLFs/MMQxzvVE2iVC1sUjWwgjvQwtALw7WBRF4wBuK9x2xVgA3AOIJ/SlveD/FttWkZUXhorVSltLVaPXFXh4LAtUMKF24LwV%2BxAojJEwDSdEQ8kZGEjnwAwwAFBexBO9cki9eD8EECIMQ7ApAyEEIoFQ6gHa6C4PoIeKAwqWH0Mja28xQZHSZpDVmFs4amnepzZmaNUbMKtBbLmr0uZ80JoLQQwssZkkwKaJGLBbgCwIAgMUTB0C8FQFAn4WAWGtHaGkFwDB3CeCaHoYIoQ%2BjFAGDQnIqQBCjGaIkZIjiGBTH6KUQxz8BBdBGOYsYPiqh%2BOGD0ax0w7G2DCc4vQEx6ieNsaUeYChIorAkLbDg4d67aM4LsVQ%2BUqymj2mWU2uwuD5T1FwDKvt/ZEEDpCLgsxeAtS0O3JAiwCAJC/j3LuxBwgEk4AUopJTthD3KXHdKgUDb1ONjQ/BwhRDiBIQs8haharUNIMCa4CRcGZOybVRu70v7dJ5KgKg%2BTCnFMkKU8ZFSqk1IgB4fuPsg4tMjvMBAmBNEDBcrnfOhczCSD1OsbO6wEz5UkJIFOWd8rlVIDkx2zcaGtO%2Bl1PsPUXlkAoL3LFIBFrLVWuta6BAdp7T4HQCelBp4O2XvPXBpA6Wr3XpvBwtVd6MAIAfI%2BtVT7n0vjja%2BvBb6INWDfJ%2BVRX7HWmaoT%2B38IHkEEH/BVAD57ANWIFMBDKoEwKUPAu%2BSDQBt1QUwdBmDgTYMYAyhZhDlnSFWUodZVCi60OQRbJhUQDFsMZqdc6DCLAksevdD6X0gq6OdG/SAKS2i%2BL8BAVwsSaFWMKF4vQDiOiJtcbkNIiSZg0IqCEzoMTAkuILR0fx4SU1JLicWzIpawm5rsSktJxD9n2wbnk3aNyWAKEWpGNaepA1%2B3wPUys6wmnvONRizppzel92mpTAZbAhklJ7X2/4A6SW8BmUbRk8zZC2uIfa2QazKGBV0HTbZTBdkQLbQiw5nBjldK/rsc5%2BTV29uQP2zKg6GJbR5E8%2BdM0x1mGaa3NpmSAVFzMHqBMeVJBmHypCTKSc4UZ3vQ7RuzdmooI7hivpc68U0wQxS8e41qUzznqvBlTK14by3uyvue8uWH2PoFPlF8r4MpFUYB%2B7GJWOCle/WVyAv4at4L/byDtVVAIwOJuKPxwGxR1bA/ViDfgoKoGgjBJ5LX%2BVijapZR7SHyEdWenQIB1iuuMP6j1XqGa4Q4VaKG/qeHcwkaoAmAsdxCy/UTNRGjFy8PWNo8N%2Bj4DRqMc4eNpjM3JpsXmrN7jM3ppzRE1N%2BaY2ForZmst1QG3perfm2tFjiuTEK3m5tSx0lNNzgczDnarklOAMgL9Ug9RmFqSOkgY6J3ge%2Bh0k5PScV9KXasYZ1zdgtba%2BsKp27ut6L0IZohEhj1kLMxsyzWydl7Lq%2B23JHAn2nNfRcibzXWvlOBZ1wDWKx3rDA6iqOUmoPFyrEnTK6xY4j3yplUqCY6aIqw7YPQj3kogEkD%2BzKydMqJy4FwRD/23vSCkyFjDHam79ae5wUNhcygBEB/VTH8woEpGcJIIAA%3D%3D
-
----
-
-# How to Enforce an Argument Constraint on a Method Parameter?  
-
-```c++
-template <typename T, typename S = std::string> 
-concept has_set = requires(T t, S s) {
-    { t.set(s) } -> std::same_as<void>;
-};
-
-struct C1
-{
-    void set([[maybe_unused]] `std::string` const & s) {}
-};
-
-static_assert(has_set<C1>);
-```
-
----
-
-# How to Enforce an Argument Constraint on a Method Parameter?  
-
-```c++
-template <typename T, typename S = std::string>
-concept has_set = requires(T t, S s) {
-    { t.set(s) } -> std::same_as<void>;
-};
-
-struct C2
-{
-    void set([[maybe_unused]] `std::string_view` const & s) {}
-};
-
-static_assert(has_set<C2>);
-```
-
----
-
-# How to Enforce an Argument Constraint on a Method Parameter?  
-
-```c++
-template <typename T, typename S = std::string>
-concept has_set = requires(T t, S s) {
-    { t.set(s) } -> std::same_as<void>;
-};
-
-struct C3
-{
-    void set([[maybe_unused]] `std::string_view` const & s) 
-        const `noexcept` {}
-};
-
-static_assert(has_set<C3>);
-```
-
----
-
-# How to Enforce an Argument Constraint on a Method Parameter?  
-
-```c++
-template <typename T, typename S = std::string>
-concept has_set = requires(T t, S s) {
-    { t.set(s) } -> std::same_as<void>;
-};
-
-struct C4
-{
-    void set([[maybe_unused]] int i) const noexcept {}
-};
-
-static_assert(`!`has_set<C4>); // Not here. TODO: Explain 
-```
 ---
 
 # How to Enforce an Argument Constraint on a Method Parameter?  
@@ -845,6 +868,7 @@ struct C1
 
 static_assert(has_set<C1>);
 ```
+
 
 ---
 
@@ -884,6 +908,114 @@ static_assert(has_set<C2>);
 ```
 
 ---
+
+
+# How to Relax an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T> 
+concept has_set = requires(T t, std::string s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+```
+
+The requirement for `s` could be a little more fuzzy.
+
+???
+
+https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAMzwBtMA7AQwFtMQByARg9KtQYEAysib0QXACx8BBAKoBnTAAUAHpwAMvAFYTStJg1DIApACYAQuYukl9ZATwDKjdAGFUtAK4sGEjaSuADJ4DJgAcj4ARpjE/qQADqgKhE4MHt6%2B8UkpjgIhYZEsMXFcAXaYDmlCBEzEBBk%2BfmW2mPZ5DDV1BAUR0bHxCrX1jVktQ929RSX%2BAJS2qF7EyOwc5gDMocjeWADUJutuBACeCZgA%2BgTETIQKB9gmGgCCG1s7mPuHQ8ShwOcAbnhMAB3e6PF5mTYMbZePYHNzfX5g57ggiYFgJAxoz5HU6MVgfAAqpF2JzOzDYuyEnwAIrshugQCBEUZkU80NDMAkCLsEEwFOclDyDnTiJgAI5ePBihQQQmkknUhSzfYAdisz12WrVFlJADohRBlWq6QBae70giM5kE878%2BH/VB4dBg9Yal6qmkHd3g75eBy7NxccEmdXg7W7R3O%2BmYAgQEwAVisSZYTGOMXOXgYXiULoTXvzlutLOAuw5Q32ZgAbPSVaGrJ6Q423SHnhNHMg7QolPUIHyBUL4UH7rNva2nn6A24zE33RGo%2BgY3HE8mLKn0xcsznMHmC3SGUySwCgcCywIK%2BYa8b66GvSjmz627UO12e3H%2B4LY0OZ%2BtsKOWyiT7EP6PJuOss7htqC5LvGSYruuGZbrmiZ7kWh5XL8x4gmeDAXtWtY4RWDCoJgqgrNyOq3k2XoAS8T5MC%2B/Jvn2/KfgQQ7gb%2B/6PnRE5XCBgaSBBmpQU6i6Giu8Fpoh2bIfmKG7KEPJ4Cq5Y8sRpHkcKYaNveNE8e2eCdkxsTvqxg6HG4QlcWOgG8UpuypqEEB1mGdm3hw8y0JwCa8H4HBaKQqCcG41jWPSizLB8Gw8KQBCaJ58wANYgAmGh6hoACckgaJI6wABz5aqUiqus6xVvonCSH5CVBZwvAKCAATxQFnmkHAsAwIgKACPwxCppy5CUGgGJ0LEjWwCNCRjcQACSjL/MgCQJACXCZecWKYEM5yqFW0ioNyaSNRwAD0B6mJY1ibRWJ0AFpMLsJ0AOpiLQj0APJmG1EBTTN80oAYRhrS0B0dMdpoMiKF1WJYkK7BDVq0HgUQikjUTQ%2BFpovbQb1Y6RVwPaaZzoIYHbfb99BzYywBSGYQWHeenAIy66w0hjsPrPD2O409%2BPXPDxOk0ZXPEaaWZJcRwIMET1zAKmCgi6gYuyTuRN1ASaLEPD708LM8w7oQJDOnogPAP97M2GjE0uV5Pk1a1dUcB4DB9QNKy7AAaiesS7BAuCG1rMUqusJ1cL5cUJXrpApZIVZ6qqCZVhoCZcKqVZmAmCaqvllUcNVpAsCA1Z6pIqdmNnVZlWVVZpTn/mBcFHANU1EetfMHXdRTsRDT9qCjZTAOGDT%2BUtDQtCa41EBRLVUShHUxycLFs/MMQxzvVE2iVC1sUjWwgjvQwtALw7WBRF4wBuK9x2xVgA3AOIJ/SlveD/FttWkZUXhorVSltLVaPXFXh4LAtUMKF24LwV%2BxAojJEwDSdEQ8kZGEjnwAwwAFBexBO9cki9eD8EECIMQ7ApAyEEIoFQ6gHa6C4PoIeKAwqWH0Mja28xQZHSZpDVmFs4amnepzZmaNUbMKtBbLmr0uZ80JoLQQwssZkkwKaJGLBbgCwIAgMUTB0C8FQFAn4WAWGtHaGkFwDB3CeCaHoYIoQ%2BjFAGDQnIqQBCjGaIkZIjiGBTH6KUQxz8BBdBGOYsYPiqh%2BOGD0ax0w7G2DCc4vQEx6ieNsaUeYChIorAkLbDg4d67aM4LsVQ%2BUqymj2mWU2uwuD5T1FwDKvt/ZEEDpCLgsxeAtS0O3JAiwCAJC/j3LuxBwgEk4AUopJTthD3KXHdKgUDb1ONjQ/BwhRDiBIQs8haharUNIMCa4CRcGZOybVRu70v7dJ5KgKg%2BTCnFMkKU8ZFSqk1IgB4fuPsg4tMjvMBAmBNEDBcrnfOhczCSD1OsbO6wEz5UkJIFOWd8rlVIDkx2zcaGtO%2Bl1PsPUXlkAoL3LFIBFrLVWuta6BAdp7T4HQCelBp4O2XvPXBpA6Wr3XpvBwtVd6MAIAfI%2BtVT7n0vjja%2BvBb6INWDfJ%2BVRX7HWmaoT%2B38IHkEEH/BVAD57ANWIFMBDKoEwKUPAu%2BSDQBt1QUwdBmDgTYMYAyhZhDlnSFWUodZVCi60OQRbJhUQDFsMZqdc6DCLAksevdD6X0gq6OdG/SAKS2i%2BL8BAVwsSaFWMKF4vQDiOiJtcbkNIiSZg0IqCEzoMTAkuILR0fx4SU1JLicWzIpawm5rsSktJxD9n2wbnk3aNyWAKEWpGNaepA1%2B3wPUys6wmnvONRizppzel92mpTAZbAhklJ7X2/4A6SW8BmUbRk8zZC2uIfa2QazKGBV0HTbZTBdkQLbQiw5nBjldK/rsc5%2BTV29uQP2zKg6GJbR5E8%2BdM0x1mGaa3NpmSAVFzMHqBMeVJBmHypCTKSc4UZ3vQ7RuzdmooI7hivpc68U0wQxS8e41qUzznqvBlTK14by3uyvue8uWH2PoFPlF8r4MpFUYB%2B7GJWOCle/WVyAv4at4L/byDtVVAIwOJuKPxwGxR1bA/ViDfgoKoGgjBJ5LX%2BVijapZR7SHyEdWenQIB1iuuMP6j1XqGa4Q4VaKG/qeHcwkaoAmAsdxCy/UTNRGjFy8PWNo8N%2Bj4DRqMc4eNpjM3JpsXmrN7jM3ppzRE1N%2BaY2ForZmst1QG3perfm2tFjiuTEK3m5tSx0lNNzgczDnarklOAMgL9Ug9RmFqSOkgY6J3ge%2Bh0k5PScV9KXasYZ1zdgtba%2BsKp27ut6L0IZohEhj1kLMxsyzWydl7Lq%2B23JHAn2nNfRcibzXWvlOBZ1wDWKx3rDA6iqOUmoPFyrEnTK6xY4j3yplUqCY6aIqw7YPQj3kogEkD%2BzKydMqJy4FwRD/23vSCkyFjDHam79ae5wUNhcygBEB/VTH8woEpGcJIIAA%3D%3D
+
+---
+
+# How to Relax an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string> 
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct C1
+{
+    void set([[maybe_unused]] `std::string` const & s) {}
+};
+
+static_assert(has_set<C1>);
+```
+
+---
+
+# How to Relax an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string>
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct C2
+{
+    void set([[maybe_unused]] `std::string_view` const & s) {}
+};
+
+static_assert(has_set<C2>);
+```
+
+---
+
+# How to Relax an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string>
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct C3
+{
+    void set([[maybe_unused]] `std::string_view` const & s) 
+        const `noexcept` {}
+};
+
+static_assert(has_set<C3>);
+```
+
+---
+
+# How to Relax an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string>
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct C4
+{
+    void set([[maybe_unused]] int i) const noexcept {}
+};
+
+static_assert(`!`has_set<C4>); // TODO: Explain 
+```
+---
+
+# How to Relax an Argument Constraint on a Method Parameter?  
+
+```c++
+template <typename T, typename S = std::string>
+concept has_set = requires(T t, S s) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct C4
+{
+    void set([[maybe_unused]] int i) const noexcept {}
+};
+
+static_assert(has_set<C4, int>); // Aha!
+```
+---
+
 
 # How to Relax an Argument Constraint on a Method Parameter?  
 
