@@ -809,9 +809,9 @@ concept has_super_cool_features =
 ```c++
 struct Mock {
     std::list<std::string> collectedSetArguments;
-    mutable std::atomic<std::size_t> numberOfCallsToCoolFeature { 0 };
+    mutable std::atomic<std::size_t> nCallsToCoolFeature { 0 };
     std::string coolFeature() const {
-        `++numberOfCallsToCoolFeature`;
+        `++nCallsToCoolFeature`;
         return collectedSetArguments.empty()
             ? "<default value>"
             : collectedSetArguments.back();
@@ -835,7 +835,7 @@ struct Mock {
         auto result = `modern::consume(impl)`;
 
         expect(EXPECTED_COOLFEATURE_CALLS 
-            == impl.numberOfCallsToCoolFeature);
+            == impl.nCallsToCoolFeature);
         expect("The answer to all questions is 42"s 
             == result);
         // side effect
@@ -848,8 +848,9 @@ struct Mock {
 background-image: url(images/20140920_100420.jpg)
 background-size: cover
 
-# .white[Details]
+# .white[Interesting Details]
 
+## .white[Or: About Balls and Church Windows]  
 
 ---
 
@@ -914,12 +915,15 @@ static_assert(has_set<C2>);
 
 ```c++
 template <typename T> 
-concept has_set = requires(T t, std::string s) {
+concept has_set = requires(T t, `std::string` s) {
     { t.set(s) } -> std::same_as<void>;
 };
 ```
 
-The requirement for `s` could be a little more fuzzy.
+The requirement for `s` could be a little bit more fuzzy.
+
+<img width="100%" src=images/2015-07-28_Dartmoor_2.jpg>
+
 
 ???
 
@@ -1012,7 +1016,7 @@ struct C4
     void set([[maybe_unused]] int i) const noexcept {}
 };
 
-static_assert(has_set<C4, int>); // Aha!
+static_assert(has_set<C4, `int`>); // Aha!
 ```
 ---
 
@@ -1100,16 +1104,71 @@ static_assert(has_set<C1, std::string const &>);
 ```c++
 template <typename T>
 concept has_set = requires(T t) {
-    { t.set(
-        [](){ // set should take one of these 3 args
-            struct { // hidden unnamed struct 
-                operator std::`string_view`();
-                operator std::`string`();
-                operator `char *`(); } s; 
-            return s; }`()` // execute lambda
-      ) } -> std::same_as<void>;
+    { t.set(/* `?????` */) } -> std::same_as<void>; 
 };
 ```
+
+---
+
+```c++
+struct Something {
+    operator std::string_view(); // declarations are sufficient!
+    operator std::string();
+    operator char *();
+};
+
+namespace { Something `s`{}; } // do not leak a symbol!
+
+template<typename T>
+concept has_set = requires(T t) {
+    { t.set(s) } -> std::same_as<void>;
+};
+
+struct Bar {
+    void set(std::string_view);
+};
+static_assert(has_set<Bar>);
+```
+
+---
+
+```c++
+struct Something { // `We need an anonymous struct!`
+    operator std::string_view();
+    operator std::string();
+    operator char *();
+};
+
+template<typename T>
+concept has_set = requires(T t) {
+    { t.set(`Something{}`) } -> std::same_as<void>;
+};
+
+struct Bar {
+    void set(std::string_view);
+};
+static_assert(has_set<Bar>);
+```
+
+---
+
+# How to Relax ...
+
+```c++
+template <typename T>
+concept has_set = requires(T t) {
+    { t.set(
+        [](){ 
+            `struct` { // hidden unnamed struct 
+                operator std::string_view();
+                operator std::string();
+                operator char *(); } `s`; // s not visible outside 
+            `return s;` }`()` // execute lambda
+      ) } -> std::same_as<void>; 
+};
+```
+
+https://godbolt.org/z/edhjEoGGP
 
 ---
 
