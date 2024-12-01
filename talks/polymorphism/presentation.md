@@ -36,8 +36,6 @@ template: inverse
 <br>
 <br>
 <br>
-<br>
-
 
 ```c++
 using namespace std::chrono
@@ -46,11 +44,34 @@ give_talk();
 auto t_1 = high_resolution_clock::now();
 auto duration = 
     duration_cast<minutes>(t_1 - t_0);
-expect(duration.count() < 40, 
-       "Talk went longer" 
-       "than 40 minutes");
+constexpr decltype(duration.count()) 
+    max_nminutes = 90;     
+expect(duration.count() < max_nminutes, 
+       std::format("Talk went longer" 
+                   "than {} minutes", 
+                   max_nminutes));
 ```
 ]]
+
+---
+
+# This Talk is a Test 
+
+> I aim at leveraging the user experience by specific measures 
+
+## Supporting people who are visually impaired
+
+- I use the [Intel One Mono Typeface](https://github.com/intel/intel-one-mono/) for **readability**
+  - Example: `int main() {}`  
+- I use a **rather large font** which limits the number of lines of code per slide 
+- I provide an URL to the **slides** in advance (see QR code on next slide)
+
+## Supporting people who are smarter than I am 
+
+- I provide an URL to the **slides** in advance (see QR code on next slide)
+- I provide the **source code** in advance (see QR code on next slide)
+
+Please give me some feedback after the talk about what was helpful for you. 
 
 ---
 
@@ -86,6 +107,28 @@ class: impact-large
 ## Fotos are mine
 
 Published under [.white[CC BY-SA]](https://creativecommons.org/licenses/by-sa/4.0/legalcode) .image-fixed-40[![](images/CC_BY-SA_88x31.png)]
+
+
+---
+
+background-image: url(images/DSC_0608_DxO.jpg)
+background-size: cover
+
+# It's Very Easy To Give a Talk ...
+# ... about Concepts 
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+> Greetings from [David Dunning and Justin Kruger](https://en.wikipedia.org/wiki/Dunning%E2%80%93Kruger_effect): You can give a talk, too!
 
 ---
 
@@ -707,6 +750,13 @@ template std::string consume<Impl>(Impl&);
 
 ---
 
+background-image: url(images/2019-03-16_IMG_4405.JPG)
+class: impact
+
+# `break();`<br>(20 minutes)
+
+---
+
 background-image: url(images/DSC_0647.JPG)
 class: impact
 
@@ -765,6 +815,14 @@ concept has_super_cool_features = requires(T t, std::string s) {
 
 ---
 
+background-image: url(images/DSC_0641.JPG)
+background-size: cover
+
+## Splitting Interfaces
+
+
+---
+
 # Pros & Cons
 
 .col-6[
@@ -816,9 +874,22 @@ concept has_cool_feature = requires(T t, std::string s) {
 
 template <typename T> 
 concept has_super_cool_features = 
-    // order matters for short circuit!
     has_cool_feature<T> `&&` has_set<T>;
 ```
+
+---
+
+background-image: url(images/DSC_0643.JPG)
+background-size: cover
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+## Testing
 
 ---
 
@@ -949,7 +1020,7 @@ concept has_set = requires(T t, `std::string` s) {
 };
 ```
 
-The requirement for `s` could be a little bit more fuzzy.
+The requirement for `s` could be a little bit more relaxed. What are our options?
 
 <img width="100%" src=images/2015-07-28_Dartmoor_2.jpg>
 
@@ -991,6 +1062,7 @@ struct C2
     void set([[maybe_unused]] `std::string_view` const & s) {}
 };
 
+// automatic conversion kicks in
 static_assert(has_set<C2>);
 ```
 
@@ -1007,7 +1079,7 @@ concept has_set = requires(T t, S s) {
 struct C3
 {
     void set([[maybe_unused]] `std::string_view` const & s) 
-        const `noexcept` {}
+        `const noexcept` {}
 };
 
 static_assert(has_set<C3>);
@@ -1231,7 +1303,7 @@ concept has_set = requires(T t) {
     { t.set(
         [](){ // set should take `any argument`
             struct { 
-                // `Compiler error`:Templates cannot be 
+                // `Compiler error`: Templates cannot be 
                 // declared inside of a local class!
                 `template <typename U> operator U();`
             } s;
@@ -1263,7 +1335,7 @@ https://godbolt.org/z/8z54jj8qW
 
 ---
 
-# How to Relax an Argument Constraint  
+# Using Predefined `std::`Concepts?
 
 ```c++
 template<typename T>
@@ -1285,7 +1357,7 @@ static_assert(has_set<Bazz>);
 
 ---
 
-# Using Predefined `std::`Concepts  
+# Using Predefined `std::`Concepts?  
 
 ```c++
 template<typename T>
@@ -1305,329 +1377,122 @@ static_assert(`!`has_set<Bar>);
 
 ---
 
-# How to Relax an Argument Constraint  
+# Splitting Concepts Allows Overloads
 
 ```c++
-template<typename T>
-concept has_set = 
-    std::invocable<decltype(&T::set), 
-                      T &, std::string>
-    || std::invocable<decltype(&T::set), 
-                      T &, std::string_view const &>
-    || std::invocable<decltype(&T::set), 
-                      T &, char const *> 
-    ;
-
-struct Foo {};
-static_assert(!has_set<Foo>);
-
-struct Bar {
-    void set(std::string_view);
-    void set(std::string);
-};
-static_assert(has_set<Bar>);
-
-struct Baz {
-    void set(std::string);
-};
-static_assert(has_set<Baz>);
-
-struct Bazz {
-    void set(char const *);
-};
-static_assert(has_set<Bazz>);
-``` 
-
----
-
-```c++
-#include <tuple>
-#include <string>
-
-template<typename>
-struct function_traits;
-
-template <typename Return, typename... Args>
-struct function_traits<Return (*)(Args...)>
-{
-   using return_type = Return;
-   using arg_types = std::tuple<Args...>;
-
-   static constexpr std::size_t arity = sizeof...(Args);
-   template <std::size_t i> using arg_type = Args...[i];
-};
-
-template <typename Class, typename Return, typename... Args>
-struct function_traits<Return (Class::*)(Args...)>
-   : function_traits<Return(*)(Args...)>
-{
-    using class_type = Class;
-};
-
-// test
-std::size_t func(int, const std::string &s) { return s.size(); }
-struct Test {
-    std::size_t func(int, const std::string &s) { return s.size(); }
-};
-
-int main() {
-  // using traits = function_traits<decltype(func)>;
-  using traits = function_traits<decltype(&Test::func)>;
-
-  static_assert(traits::arity == 2);
-  static_assert(std::is_same_v<traits::return_type, std::size_t>);
-  static_assert(std::is_same_v<traits::arg_type<0>, int>);
-  static_assert(std::is_same_v<traits::arg_type<1>, const std::string &>);
-  static_assert(std::is_same_v<traits::arg_types, std::tuple<int, const std::string &>>);
-
-  return 0;
-}
-
-
-// template<auto mf, typename T>
-// auto make_proxy(T && obj)
-// {
-//     return [&obj] (auto &&... args) {
-//         return (std::forward<T>(obj).*mf)(std::forward<decltype(args)>(args)...);
-//     };
-// }
-```
-
----
-
-```c++
-#include <type_traits>
-#include <string_view>
-#include <string>
-#include <print>
-
-struct NeverUseThis {
-    template <typename T>
-    [[ noreturn ]] operator T() {
-        static_assert("never reach me!");
-        throw;
-    }     
-};
-
-template <typename T>
-concept has_set = 
-    std::is_invocable_v<decltype(&T::set), T &, std::string>
-    || std::is_invocable_v<decltype(&T::set), T &, std::string_view>
-    || std::is_invocable_v<decltype(&T::set), T &, char const *> 
-    ;
-
-    // std::is_invocable<, decltype(a), int>
-
-    // std::convertible_to<S, std::string_view> 
-    // &&
-    // requires(T t, S s) {
-    //     { t.set(s) } -> std::same_as<void>;      
-    // };
-
-//static_cast<void(T::*)(std::string_view)>(&T::set); 
-
-struct Foo {};
-static_assert(!has_set<Foo>);
-
-struct Bar {
-    void set(std::string_view);
-};
-static_assert(has_set<Bar>);
-
-struct Baz {
-    void set(std::string);
-
-};
-static_assert(has_set<Baz>);
-
-struct FooBarBaz {
-    void set(std::string_view) { 
-        std::print("FooBarBaz\n");
-    };
-    void set(int) { };
-};
-static_assert(has_set<FooBarBaz>);
-
-struct HasSetClass
-{
-    void set([[maybe_unused]] std::string const & s) {
-        std::print("HasSetClass\n");
-    }
-};
-
-struct HasSetClass2
-{
-    void set([[maybe_unused]] std::string_view const & s) {
-        std::print("HasSetClass2\n");
-    }
-};
-
-
-void use(has_set auto & o)
-{
-     o.set("aaa");
-}
-
-int main() {
-    FooBarBaz fbb;
-    use(fbb);
-
-    HasSetClass a1;
-    use(a1);
-
-    HasSetClass2 a2;
-    use(a2);
-}
-```
-
----
-
-```c++
-struct NeverUseThis {
-    template <typename T>
-    [[ noreturn ]] operator T() {
-        static_assert("never reach me!");
-        throw;
-    }
-};
-```
-
-Dabei reicht
-
-```c++
-struct NeverUseThis {
-    template <typename T> operator T();
-};
-```
-
----
-
-```c++
-#include <string>
-#include <string_view>
-
 template<typename T>
 concept has_set = requires(T t) {
-    { t.set(
-        [](){ struct {
-            operator std::string_view();
-            operator std::string();
-            operator char *();
+{ t.set([](){ struct { operator `std::string_view`(); } s; 
+    return s; }()) } -> std::same_as<void>; }
+  `||` // order matters, short circuit kicks in here
+                  requires(T t) {
+{ t.set([](){ struct { operator `std::string`(); } s; 
+    return s; }()) } -> std::same_as<void>; };
 
-        } s; return s; }()
-      ) } -> std::same_as<void>;
-};
-
-struct Foo {};
-static_assert(!has_set<Foo>);
-
-struct Bar {
-    void set(std::string_view);
-};
-static_assert(has_set<Bar>);
-
-struct Baz {
-    void set(std::string);
-    void set(int i);
-};
-static_assert(has_set<Baz>);
-
-struct Bazz {
-    void set(char *);
-};
-static_assert(has_set<Bazz>);
-
-
-int main()
-{
-}
+struct Baz { void set(std::string); 
+             void set(std::string_view); };
+static_assert(/* hooray! */ `has_set<Baz>`);
 ```
+https://godbolt.org/z/GMrdjqoE7
 
 ---
+
+# Pushing the Limits
+
+## "I want it all and I want it now"
 
 ```c++
 template<typename T>
 concept has_set = requires(T t) {
     { t.set(
-        [](){ struct {
-            operator std::string_view();
-            
-        } s; return s; }()
-      ) } -> std::same_as<void>; }
-      ||
-      requires(T t) {
-    { t.set(
-        [](){ struct {
-            operator std::string();
-        } s; return s; }()
-      ) } -> std::same_as<void>; }
-       ||
-      requires(T t) {
-    { t.set(
-        [](){ struct {
-            operator char *();
-        } s; return s; }()
-      ) } -> std::same_as<void>; }   
-      ;
+        `any_of<std::string_view, std::string, char*>`() 
+    ) } -> std::same_as<void>;
+};
 ```
+
+https://godbolt.org/z/ehxhxbscd
+
 ---
 
 ```c++
-template< class F, class... Args >
+template <typename T> struct can_convert_to { 
+    using type = T;
+    operator T(); 
+};
 
-concept invocable =
-    requires(F&& f, Args&&... args) {
-        std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
-            /* not required to be equality-preserving */
+template<class`...` Ts> struct overloaded : `can_convert_to`<Ts>`...` { 
+    using can_convert_to<Ts>::operator 
+        typename can_convert_to<Ts>::type`...`; 
     };
+
+template<typename... Ts> auto any_of() 
+    { return overloaded<Ts...>{}; };
+
+template<typename T> concept has_set = requires(T t) {
+    { t.set(
+        any_of<std::string_view, std::string, char*>() 
+    ) } -> std::same_as<void>;
+};
 ```
 
 ---
 
-```c++
-#include <string>
-#include <string_view>
-#include <concepts>
+# Problem With Overloading Remains
 
-template<typename T, typename Return, typename Arg>
-concept has_set_memfn = requires(T t) { { t.set(Arg{}) }->std::same_as<Return>; };
+```c++
+struct Bar {
+    void set(std::string_view);
+    void set(std::string);
+};
+
+static_assert(`!`has_set<Bar>);
+```
+
+Let us look at ... 
+
+... **fold expressions** for concepts, proposed by Corentin Jabot in 
+[p2963r3.pdf](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p2963r3.pdf).
+
+---
+
+```c++
+template <typename T, typename Arg> 
+concept has_set_helper = requires(T t, Arg arg) { 
+    { t.set(arg) } -> std::same_as<void>; };
+
+template<typename T, typename`...` Args>
+concept has_set_with_any_of = (has_set_helper<T, Args> `|| ...`);
 
 template<typename T>
-concept has_set = has_set_memfn<T, void, std::string_view>;
-
-struct Foo {};
-static_assert(!has_set<Foo>);
+concept has_set = has_set_with_`any_of`<T, 
+    `std::string_view, std::string, char const *`>; 
 
 struct Bar {
-    void set(std::string_view){}
+    void set(std::string_view);
+    void set(std::string);
 };
-static_assert(has_set<Bar>);
-
-int main() {
-    Bar bar;
-
-    bar.set([](){ struct {
-            operator std::string_view() const { return ""; }
-        } s; return s; }());
-}
+static_assert(/* hooray again! */ `has_set<Bar>`);
 ```
 
 ---
 
-We then declare a **template** function that takes arguments whose type adheres to the **constraints** defined by the **concept**:
+# Homework
+
+Find a way to express 
 
 ```c++
-std::string consume(has_super_cool_features `auto`& s);
+template <typename T, typename Arg> 
+concept has_set = requires(T t) { 
+    { t.set(/* `anything, not a limited list of types` */) } 
+    -> std::same_as<void>; };
 ```
-TODO
 
-```c++
-template <has_super_cool_features T> std::string consume(T & s);
-```
+BTW, you must not use reflection 😜.
 
 ---
 
 template: roentgen
 class: middle
+background-image: url(images/DSC_0229.JPG)
 
-# Thank You for your attention!
+# .center[.white[Thank You for your attention!]]
