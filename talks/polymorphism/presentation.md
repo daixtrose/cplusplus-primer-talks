@@ -97,7 +97,9 @@ background-image: url(images/2024-03-30_Amsterdam_X-T3_DSCF0516.jpg)
 
 ## Slides
 
-> https://www.daixtrose.de/talks/crazy-generic-lambdas/crazy-generic-lambddas.html
+> https://www.daixtrose.de/talks/cplusplus-primer/talks/polymorphism/presentation.html
+
+
 
 <img id="url-slides">
 
