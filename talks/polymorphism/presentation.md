@@ -33,25 +33,29 @@ template: inverse
 
 <br>
 <br>
-<br>
-<br>
-<br>
+
+> https://godbolt.org/z/MKecPK3fz
 
 ```c++
-using namespace std::chrono
+using namespace boost::ut;
+using namespace std::chrono;
 auto t_0 = high_resolution_clock::now();
 give_talk();
 auto t_1 = high_resolution_clock::now();
 auto duration = 
     duration_cast<minutes>(t_1 - t_0);
-constexpr decltype(duration.count()) 
-    max_nminutes = 90;     
-expect(duration.count() < max_nminutes, 
-       std::format("Talk went longer" 
-                   "than {} minutes", 
-                   max_nminutes));
+constexpr auto max_nminutes = 
+    minutes{90};
+expect(duration < max_nminutes) 
+    << std::format(
+    "Talk went longer than {} minutes",
+    max_nminutes);
 ```
 ]]
+
+???
+
+https://godbolt.org/z/MKecPK3fz
 
 ---
 
