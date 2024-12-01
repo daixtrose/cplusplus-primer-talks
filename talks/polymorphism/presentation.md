@@ -821,6 +821,62 @@ concept has_super_cool_features = requires(T t, std::string s) {
 
 ---
 
+# Pros & Cons
+
+.col-6[
+## Classic
+
+- An interface is a **closed contract**   
+  - "That's all you can get!<br>Nothing more to see here!"
+  - When passed as a parameter, you do not have access to other members of the implementation. 
+  - Additional member functions of the implementation are **hidden**. 
+  - Object-Oriented Programming purists will love this. 
+]
+.col-6[
+## Modern
+
+- A concept is an **open contract** 
+  - "This is the *minimal set*,<br>there *might* be more."     
+  - When passed as a parameter, you can still see/use other members of the implementation. 
+  - Additional member functions of the implementation are still accessible.
+  - Object-Oriented Programming purists will wrinkle their nose.  
+]
+
+---
+
+# Pros & Cons
+
+.col-6[
+## Classic
+
+- "You cannot access public members. 
+- A virtual member *function* is required." 
+  
+]
+.col-6[
+## Modern
+
+- "Hold my beer"
+- 👇 https://godbolt.org/z/bq3TE5q6s
+
+]
+
+.col-12[
+
+```c++
+template <typename T>
+concept has_member_a = requires(T t) {
+    { t.a } -> std::same_as<double &>;
+};
+
+struct Bar { double a; };
+static_assert(has_member_a<Bar>);
+```
+
+]
+
+---
+
 background-image: url(images/DSC_0641.JPG)
 background-size: cover
 
