@@ -240,56 +240,46 @@ classic::Impl i;
 std::cerr << classic::consume(i) << '\n';
 ```
 
+
 ---
 
-background-image: url(images/IMG_2077.JPEG)
+background-image: url(images/DSC_0511_DxO.jpg)
+
+---
+
+background-image: url(images/DSC_0252.JPG)
 class: impact
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+# Concepts
 
-## Hop(e) on the Concepts Train 
+## An Incomplete Introduction
 
-<br>
-<br>
-
-https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0734r0.pdf
+<a href="https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0734r0.pdf">p0734r0.pdf</a>
 
 ---
 
 # Concepts
 
 - This feature was one of the earlier features that Bjarne wanted to have in the language (see https://isocpp.org/blog/2016/02/a-bit-of-background-for-concepts-and-cpp17-bjarne-stroustrup)
-  >  In about `1987`, I tried to design templates with proper interfaces. I failed. I wanted three properties for templates: 
+  >  In about **1987**, I tried to design templates with proper interfaces. I failed. I wanted three properties for templates: 
   > - full generality/expressiveness, 
   > - zero overhead compared to hand coding, and 
-  > - `good interfaces`. 
+  > - **good interfaces**. 
   >
-  > I got Turing completeness, better than hand-coding performance, and lousy interfaces. `The lack of well-specified interfaces led to the spectacularly bad error messages we saw over the years.` The other two properties made templates a run-away success.
+  > I got Turing completeness, better than hand-coding performance, and lousy interfaces. **The lack of well-specified interfaces led to the spectacularly bad error messages we saw over the years.** The other two properties made templates a run-away success.
   > The solution to the interface specification problem was named “concepts” by Alex Stepanov. 
 
 ---
 
 # Concepts
 
-A concept is a named set of requirements. The definition of a concept has the form
+A concept is a **named set of requirements**. The definition of a concept has the form
 
 ```
 template <template-parameter-list>
 concept concept-name = constraint-expression;
 ```
 
----
-
-# Concepts
-
-Implicit **SFINAE**: If the expressions in the so-called requires expression are valid, then the template parameter `T` adheres to the constraint:
 
 ```c++
 template<typename T>
@@ -298,11 +288,15 @@ concept R = requires (T i) {
     // special syntax to describe the return value 
     // of the expression in {}
     {*i} -> std::same_as<const typename T::type&>;
-    // p0734r0.pdf mentions 
-    // {*i} -> const typename T::type&;
+    // p0734r0.pdf mentions {*i} -> const typename T::type&;
     // but this gets rejected by all 3 major compilers!
 };
 ```
+
+??? 
+
+Implicit **SFINAE**: If the expressions in the so-called requires expression are valid, then the template parameter `T` adheres to the constraint:
+
 
 ---
 
@@ -332,11 +326,31 @@ Putting it together in one for a `requires requires`:
 
 ```c++
 template<typename T> concept C = 
-    /* sth that evaluates to true or a requires expression */;
+    /* `sth that evaluates to true` OR a requires expression */;
 ```
-e.g.
+
 ```c++
 template<typename T> concept C = sizeof(T) > 2;
+
+template<typename T> `requires C<T>` // requires `clause`
+ T foo(T a, T b) { /* whatever */ }
+```
+
+or
+
+```c++
+template<typename T>
+requires `(` sizeof(T) > 2 `)` // requires clause
+T foo(T a, T b) { /* whatever */ }
+``` 
+
+---
+
+# Concepts
+
+```c++
+template<typename T> concept C = 
+    /* `sth that evaluates to true` OR a requires expression */;
 ```
 
 Four different ways to say the same thing
@@ -345,13 +359,23 @@ Four different ways to say the same thing
 template<typename T> `requires C<T>` void f2(T t); // west requires
 template<typename T> void f3(T t) `requires C<T>`; // east requires
 template<`C` T> void f1(T t);
-void f1(`C auto` t); // you need decltype(t) to obtain the type
+void f1(`C auto` t) {
+    using T = `decltype`(t);
+} 
 ``` 
 
 ---
 
+# Concepts
+
+## Omitted in this talk
+
+All possibilities how to apply concepts to **classes**. Nicolai Josuttis has you covered. 
+
+---
+
 From Nicolai Josuttis' comprehensive talk at Meeting C++ 2024: 
-- `if constexpr` and concepts play well together
+- `if constexpr` and concepts play well together (aka the death of SFINAE)
 
 ```c++
 void add(auto & coll, auto const & val) {
@@ -374,7 +398,7 @@ add(coll_2, 42); // calls insert()
 ```c++
 template <typename T, typename Val> concept `HasPushBack` = 
     requires (T t, Val v) { 
-        { t.push_back(v) } -> std::same_as<void>; };
+        { t.push_back(v) } `-> std::same_as<void>`; };
 
 void add(auto& coll, auto const& val) {
     if constexpr (`HasPushBack<decltype(coll),` `decltype(val)>`) {
@@ -393,20 +417,43 @@ add(coll_2, 42);  // calls insert()
 
 ---
 
+```c++
+void add(auto & coll, auto const & val) {
+    if constexpr (requires { coll.push_back(val); }) {
+        coll.push_back(val);  
+    } else {
+        coll.insert(val); 
+    }
+}
+```
+
+```c++
+void add(auto & coll, auto const & val) {
+    if constexpr (requires {           
+        `{` coll.push_back(val) `} -> std::same_as<void>;` }) {
+        coll.push_back(val); 
+    } else {
+        coll.insert(val); 
+    }
+}
+```
+
+---
+
 # Concepts
 
 The C++ Standard has predefined concepts, see https://en.cppreference.com/w/cpp/named_req. Example:
 
 ```c++
-template< class From, class To>
+template<class From, class To>
 concept convertible_to =
-    std::is_convertible_v<From, To> &&
+    std::is_convertible_v<From, To> `&&`
     requires {
         static_cast<To>(std::declval<From>());
     };
 ```
 
-The concept `convertible_to<From, To>` specifies that an expression of the same type and value category as those of `std::declval<From>()` can be implicitly and explicitly converted to the type To, and the two forms of conversion produce equal results. 
+The concept `convertible_to<From, To>` specifies that an expression of the same type and value category as those of `std::declval<From>()` can be implicitly and explicitly converted to the type `To`, and the two forms of conversion produce equal results. 
 
 ---
 
@@ -414,7 +461,7 @@ The concept `convertible_to<From, To>` specifies that an expression of the same 
 
 ```c++
 // Two arguments!
-template< class `From`, class `To`> concept convertible_to;
+template<class `From`, class `To`> concept convertible_to;
 
 // - `To` is explicitly set, like in a partial specialization
 // - `From` will be assigned from `T`.
@@ -435,42 +482,19 @@ If you want to use `template<C T>`, then C must have one "open" argument.
 ```c++
 #include <concepts>
 
-template <typename A, typename B, typename C>
+template <typename `A`, typename `B`, typename `C`>
 concept something = 
     std::semiregular<A>
-    && std::same_as<int, B>
-    && std::same_as<double, C>;
+    `&&` std::same_as<int, B>
+    `&&` std::same_as<double, C>;
 
-// B -> int, C -> double     
-template <something<int, double> T> 
-void foo (T t) { /* ... */ }
+// B <- int, C <- double     
+template <`something<int, double>` T> void foo (T t) { /* ... */ }
 
 int main() {
-    // A -> const char*
+    // A <- T <- const char*
     foo("hello");
 }
-```
-
----
-
-# Concepts - More Than Two Arguments 
-
-```c++
-#include <concepts>
-
-template <typename A, typename B, typename C>
-concept something = 
-    // A can be copied, moved, swapped, and default constructed
-    std::semiregular<A> 
-    && 
-    // B is both semiregular and equality_comparable
-    std::regular<B> 
-    && 
-    requires (A a, C c) { a = c; };
-
-// A -> T, B -> int, C -> double
-template <something<int, double> T> 
-void foo (T t) { /* ... */ }
 ```
 
 ---
@@ -484,10 +508,10 @@ background-image: url(images/20150728_114910.jpg)
 - Concepts describe **constraints** on a type.
 - Concepts describe the **interface** of a type (in a sloppy way).
 
-- There is more to learn.] 
+- There is more ...] 
 
 .col-12[
-    Read @Foonathan's article https://www.think-cell.com/en/career/devblog/if-constexpr-requires-requires-requires    
+    Read [@Foonathan's article](https://www.think-cell.com/en/career/devblog/if-constexpr-requires-requires-requires)    
 ]
 
 
@@ -569,7 +593,11 @@ namespace modern {
 class Impl /* : no inheritance here! */ {
     // ...
 };
+```
 
+--
+
+```c++
 // Check if the class adheres to the concept 
 // (i.e. has the interface we want it to have).
 static_assert(`has_super_cool_features<Impl>`,
@@ -679,7 +707,7 @@ template std::string consume<Impl>(Impl&);
 
 ---
 
-background-image: url(images/DSC_0197.JPG)
+background-image: url(images/DSC_0647.JPG)
 class: impact
 
 # Pros & Cons
@@ -848,9 +876,10 @@ struct Mock {
 background-image: url(images/20140920_100420.jpg)
 background-size: cover
 
-# .white[Interesting Details]
+# .white[Let's Play With Our Options]
 
-## .white[Or: About Balls and Church Windows]  
+
+> 
 
 ---
 
@@ -1171,20 +1200,66 @@ https://godbolt.org/z/edhjEoGGP
 
 ---
 
-# How to Relax an Argument Constraint on a Method Parameter?  
+```c++
+template<typename T> concept has_set = requires(T t) {
+    { t.set([](){ struct {
+                operator std::string_view();
+                operator std::string();
+        } s; return s; }()
+      ) } -> std::same_as<void>;
+};
+
+struct Bar {
+    void `set(std::string_view)`;
+    void `set(std::string)`;
+};
+// `ambiguous` - which conversion operator to choose? 
+static_assert(`!`has_set<Bar>); 
+```
+
+https://godbolt.org/z/zsq5h8e4h
+
+---
+
+# How to accept any set function?  
+
+> Slideware! Does not compile. 
 
 ```c++
 template <typename T>
 concept has_set = requires(T t) {
     { t.set(
         [](){ // set should take `any argument`
-            struct { // hidden unnamed struct 
-                `template <typename T> operator T();`
+            struct { 
+                // `Compiler error`:Templates cannot be 
+                // declared inside of a local class!
+                `template <typename U> operator U();`
             } s;
             return s; }() 
       ) } -> std::same_as<void>;
 };
 ```
+
+---
+
+# How to accept any set function?  
+
+> Back to external struct. Note: .primary[**The ambiguity remains**].
+
+```c++
+namespace { namespace private_ { 
+[[ maybe_unused ]] struct {
+    template <typename U> operator U();
+} s;
+} /* namespace private */ } // namespace
+
+template<typename T>
+concept has_set = requires(T t) {
+    { t.set(::private_::s) } -> std::same_as<void>;
+};
+```
+
+https://godbolt.org/z/8z54jj8qW
 
 ---
 
@@ -1210,7 +1285,7 @@ static_assert(has_set<Bazz>);
 
 ---
 
-# How to Relax an Argument Constraint  
+# Using Predefined `std::`Concepts  
 
 ```c++
 template<typename T>
@@ -1220,12 +1295,12 @@ concept has_set =
                   std::string_view const &>
 || std::invocable<decltype(&T::set), T &, char const *>;
 
-// CAVEAT! decltype(&T::set) becomes ambiguous
+// Reminder: decltype(&T::set) may still be ambiguous  
 struct Bar {
     void `set`(std::string_view);
     void `set`(std::string); 
 };
-static_assert(has_set<Bar>); // compiler error!
+static_assert(`!`has_set<Bar>); 
 ``` 
 
 ---
