@@ -1124,11 +1124,11 @@ concept has_set = requires(T t) {
     { t.set(s) } -> std::same_as<void>;
 };
 
-struct Bar {
-    void set(std::string_view);
-};
+struct Bar { void set(std::string_view); };
 static_assert(has_set<Bar>);
 ```
+
+https://godbolt.org/z/YscW7Pjz6
 
 ---
 
@@ -1144,9 +1144,8 @@ concept has_set = requires(T t) {
     { t.set(`Something{}`) } -> std::same_as<void>;
 };
 
-struct Bar {
-    void set(std::string_view);
-};
+struct Bar { void set(std::string_view); };
+
 static_assert(has_set<Bar>);
 ```
 
@@ -1181,6 +1180,7 @@ concept has_set = requires(T t) {
         [](){ // set should take `any argument`
             struct { // hidden unnamed struct 
                 `template <typename T> operator T();`
+            } s;
             return s; }() 
       ) } -> std::same_as<void>;
 };
@@ -1191,21 +1191,76 @@ concept has_set = requires(T t) {
 # How to Relax an Argument Constraint  
 
 ```c++
-template <typename T>
+template<typename T>
 concept has_set = 
-    std::is_invocable_v<decltype(&T::set), T &, std::string>
-    || std::is_invocable_v<decltype(&T::set), T &, 
-                                    std::string_view const &>
-    || std::is_invocable_v<decltype(&T::set), T &, char const *> 
-    ;
- 
-struct C2
-{
-    void set([[maybe_unused]] std::string_view const & s) {}
-    // void set([[maybe_unused]] std::string s) {} // TODO: WHY??
-};
+   std::invocable<decltype(&T::set), T &, std::string>
+|| std::invocable<decltype(&T::set), T &, 
+                  std::string_view const &>
+|| std::invocable<decltype(&T::set), T &, char const *>;
 
-static_assert(has_set<C2>);
+struct Bar { void set(std::string_view); };
+static_assert(has_set<Bar>);
+
+struct Baz { void set(std::string); };
+static_assert(has_set<Baz>);
+
+struct Bazz { void set(char const *); };
+static_assert(has_set<Bazz>);
+``` 
+
+---
+
+# How to Relax an Argument Constraint  
+
+```c++
+template<typename T>
+concept has_set = 
+   std::invocable<decltype(&T::set), T &, std::string>
+|| std::invocable<decltype(&T::set), T &, 
+                  std::string_view const &>
+|| std::invocable<decltype(&T::set), T &, char const *>;
+
+// CAVEAT! decltype(&T::set) becomes ambiguous
+struct Bar {
+    void `set`(std::string_view);
+    void `set`(std::string); 
+};
+static_assert(has_set<Bar>); // compiler error!
+``` 
+
+---
+
+# How to Relax an Argument Constraint  
+
+```c++
+template<typename T>
+concept has_set = 
+    std::invocable<decltype(&T::set), 
+                      T &, std::string>
+    || std::invocable<decltype(&T::set), 
+                      T &, std::string_view const &>
+    || std::invocable<decltype(&T::set), 
+                      T &, char const *> 
+    ;
+
+struct Foo {};
+static_assert(!has_set<Foo>);
+
+struct Bar {
+    void set(std::string_view);
+    void set(std::string);
+};
+static_assert(has_set<Bar>);
+
+struct Baz {
+    void set(std::string);
+};
+static_assert(has_set<Baz>);
+
+struct Bazz {
+    void set(char const *);
+};
+static_assert(has_set<Bazz>);
 ``` 
 
 ---
