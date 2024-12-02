@@ -138,6 +138,43 @@ background-size: cover
 
 ---
 
+background-image: url(images/IMG_0212.JPEG)
+background-size: cover
+
+# Thanks 
+
+** This talk would not have happened without the support<br>of these people:**
+
+.col-6[
+
+### .white[C++ UG Aachen Team]
+
+.white[
+- Sven
+- Daniel
+- Detlef
+- Kilian
+- Martin
+- Michael
+- Tobias
+]
+
+]
+.col-6[
+
+### .white[Stackoverflow Users] 
+
+.white[
+
+- [.white[wohlstad]](https://stackoverflow.com/users/18519921/wohlstad)
+- [.white[Wutz]](https://stackoverflow.com/users/1480324/wutz)
+- [.white[NathanOliver]](https://stackoverflow.com/users/4342498/nathanoliver)
+- [.white[Kirisame Igna]](https://stackoverflow.com/users/22401258/kirisame-igna)
+
+]
+]
+---
+
 background-image: url(images/IMG_0323.JPEG)
 
 # .white[Ready for Takeoff?]
@@ -1499,6 +1536,28 @@ template<typename T> concept has_set = requires(T t) {
 
 ---
 
+```c++
+template <typename T> struct can_convert_to { operator T(); };
+
+template<class`...` Ts> struct overloaded 
+    : `can_convert_to`<Ts>`...` { 
+    using can_convert_to<Ts>::operator Ts`...`; };
+
+template<typename... Ts> 
+auto any_of() { return overloaded<Ts...>{}; };
+
+template<typename T>
+concept has_set = requires(T t) {
+    { t.set(
+        any_of<std::string_view, std::string, char*>() 
+    ) } -> std::same_as<void>;
+};
+```
+
+https://godbolt.org/z/Gdc3E6veT
+
+---
+
 # Problem With Overloading Remains
 
 ```c++
@@ -1538,6 +1597,27 @@ static_assert(/* hooray again! */ `has_set<Bar>`);
 
 ---
 
+# [Kirisame Igna](https://stackoverflow.com/users/22401258/kirisame-igna) Is [Smarter](https://stackoverflow.com/a/79240822/1528210)
+
+```c++
+template <typename T, typename... Args>
+concept has_set_args = 
+    ((requires(T t, Args args) {
+        { t.set(args) } -> std::same_as<void>;
+        }) || ... || false);
+
+template <typename T> concept has_set = 
+    has_set_args<T, std::string_view, std::string, const char *>;
+
+struct Bar {
+    void set(std::string_view);
+    void set(std::string);
+};
+static_assert(has_set<Bar>);
+```
+
+---
+
 # Homework
 
 Find a way to express 
@@ -1550,6 +1630,36 @@ concept has_set = requires(T t) {
 ```
 
 BTW, you must not use reflection 😜.
+
+---
+
+# Homework 2
+
+Fix the code of the title page to also describe a pause and run with `coroutines`<br>**and** .highlight[give a talk about it!] 
+
+```c++
+using namespace boost::ut;
+using namespace std::chrono;
+
+auto t_0 = high_resolution_clock::now();
+give_talk(); // a pause is missing here.
+auto t_1 = high_resolution_clock::now();
+auto duration = duration_cast<minutes>(t_1 - t_0);
+constexpr auto max_nminutes = minutes{90};
+expect(duration < max_nminutes) 
+    << std::format("Talk went longer than {} minutes", 
+                   max_nminutes);
+```
+
+---
+
+background-color: #222222
+
+# Homework 3
+
+## Give Feedback, please.
+
+<img width=100% src=images/2015-07-28_Dartmoor_1.jpg>
 
 ---
 
