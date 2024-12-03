@@ -231,7 +231,7 @@ public:
     virtual std::string coolFeature() const = 0; 
     virtual void set(std::string s) = 0; 
     // Virtual destructor
-    virtual ~ISuperCoolFeatures() = default; 
+    virtual ~ISuperCoolFeatures() /* noexcept */ = default; 
 };
 ```
 
@@ -953,7 +953,8 @@ public:
     virtual ~IHasCoolFeature() = default;
 };
 
-class ISuperCoolFeatures : public IHasSet, IHasCoolFeature {};
+class ISuperCoolFeatures 
+    : public IHasSet, public IHasCoolFeature {};
 ```
 
 ---
@@ -1133,7 +1134,7 @@ https://godbolt.org/#z:OYLghAFBqd5QCxAYwPYBMCmBRdBLAF1QCcAaPECAMzwBtMA7AQwFtMQBy
 # How to Relax an Argument Constraint on a Method Parameter?  
 
 ```c++
-template <typename T, typename S = std::string> 
+template <typename T, typename S `= std::string`> 
 concept has_set = requires(T t, S s) {
     { t.set(s) } -> std::same_as<void>;
 };
@@ -1341,7 +1342,8 @@ struct Something { // `We need an anonymous struct!`
 
 template<typename T>
 concept has_set = requires(T t) {
-    { t.set(`Something{}`) } -> std::same_as<void>;
+    // { t.set(`Something{}`) } -> std::same_as<void>;
+    { t.set(`declval<Something>()`) } -> std::same_as<void>;
 };
 
 struct Bar { void set(std::string_view); };
