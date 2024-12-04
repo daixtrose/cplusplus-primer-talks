@@ -45,7 +45,7 @@ auto t_1 = high_resolution_clock::now();
 auto duration = 
     duration_cast<minutes>(t_1 - t_0);
 constexpr auto max_nminutes = 
-    minutes{90};
+    minutes{120};
 expect(duration < max_nminutes) 
     << std::format(
     "Talk went longer than {} minutes",
