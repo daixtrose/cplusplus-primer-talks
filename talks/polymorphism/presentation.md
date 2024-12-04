@@ -292,7 +292,7 @@ public:
 
 A variable (aka instantiation) of type `Impl` can be passed as argument to any function that expects an argument of its interface type `ISuperCoolFeatures`.
 
-In our example, we define a function which has one argument of type `ISuperCoolFeatures`, and returns a `std::string`:
+In our example, we define a function which has one argument of type `ISuperCoolFeatures &` (a reference), and returns a `std::string`:
 
 ```c++
 std::string consume(`ISuperCoolFeatures`& f);
@@ -307,6 +307,7 @@ We then pass an argument of type `Impl` to it, e.g. like this:
 ```
 
 ---
+
 
 ```c++
 namespace classic {
@@ -373,8 +374,8 @@ concept R = requires (T i) {
     typename T::type; // T must have a member named type
     // special syntax to describe the return value 
     // of the expression in {}
-    {*i} -> std::same_as<const typename T::type&>;
-    // p0734r0.pdf mentions {*i} -> const typename T::type&;
+    {*i} -> std::same_as<const typename T::type &>;
+    // p0734r0.pdf mentions {*i} -> const typename T::type &;
     // but this gets rejected by all 3 major compilers!
 };
 ```
@@ -412,7 +413,7 @@ Putting it together in one for a `requires requires`:
 
 ```c++
 template<typename T> concept C = 
-    /* `sth that evaluates to true` OR a requires expression */;
+    // `something that evaluates to true` OR a requires expression 
 ```
 
 ```c++
@@ -456,7 +457,8 @@ void f1(`C auto` t) {
 
 ## Omitted in this talk
 
-All possibilities how to apply concepts to **classes**. Nicolai Josuttis has you covered. 
+- I do present information on how to apply concepts to **classes**. 
+- Nicolai Josuttis has a good talk about that (presented at Meeting C++ 2024). 
 
 ---
 
@@ -820,7 +822,7 @@ class: impact
 .col-6[
 ## Modern
 
-- Requires (sic!) a **concept**
+- Requires (pun intended) a **concept**
   - You use the **latest compiler** anyway, do you?
   - Concepts allow sloppier constraints via `std::convertible_to`
   - Qualifiers can be disregarded 
@@ -893,7 +895,7 @@ concept has_super_cool_features = requires(T t, std::string s) {
 .col-6[
 ## Modern
 
-- "Hold my beer"
+- "Yes, we can."
 - 👇 https://godbolt.org/z/bq3TE5q6s
 
 ]
@@ -1162,7 +1164,7 @@ struct C2
     void set([[maybe_unused]] `std::string_view` const & s) {}
 };
 
-// automatic conversion kicks in
+// implicit conversion takes place
 static_assert(has_set<C2>);
 ```
 
@@ -1235,7 +1237,7 @@ The requirement for `s` could be relaxed.
 
 ```c++
 template <typename T> 
-concept has_set = requires(T t, `/* what do we do here ? */` s) {
+concept has_set = requires(T t, `/* `what do we put here?` */` s) {
     { t.set(s) } -> std::same_as<void>;
 };
 ``` 
@@ -1305,7 +1307,7 @@ static_assert(has_set<C1, std::string const &>);
 ```c++
 template <typename T>
 concept has_set = requires(T t) {
-    { t.set(/* `?????` */) } -> std::same_as<void>; 
+    { t.set(/* `what do we put here?` */) } -> std::same_as<void>; 
 };
 ```
 
@@ -1334,7 +1336,7 @@ https://godbolt.org/z/YscW7Pjz6
 ---
 
 ```c++
-struct Something { // `We need an anonymous struct!`
+struct Something { // `TODO: This should be anonymous`
     operator std::string_view();
     operator std::string();
     operator char *();
@@ -1364,7 +1366,7 @@ concept has_set = requires(T t) {
                 operator std::string_view();
                 operator std::string();
                 operator char *(); } `s`; // s not visible outside 
-            `return s;` }`()` // execute lambda
+            `return s;` }`()` // invoke body of lambda expression
       ) } -> std::same_as<void>; 
 };
 ```
@@ -1420,7 +1422,7 @@ concept has_set = requires(T t) {
 > Back to external struct. Note: .primary[**The ambiguity remains**].
 
 ```c++
-namespace { namespace private_ { 
+namespace { namespace internal { 
 [[ maybe_unused ]] struct {
     template <typename U> operator U();
 } s;
@@ -1428,7 +1430,7 @@ namespace { namespace private_ {
 
 template<typename T>
 concept has_set = requires(T t) {
-    { t.set(::private_::s) } -> std::same_as<void>;
+    { t.set(::internal::s) } -> std::same_as<void>;
 };
 ```
 
@@ -1631,13 +1633,13 @@ concept has_set = requires(T t) {
     -> std::same_as<void>; };
 ```
 
-BTW, you must not use reflection 😜.
+You must not use reflection 😜.
 
 ---
 
 # Homework 2
 
-Fix the code of the title page to also describe a pause and run with `coroutines`<br>**and** .highlight[give a talk about it!] 
+Fix the code of the title page to also describe a suspend and resume with `coroutines`<br>**and** .highlight[give a talk about it!] 
 
 ```c++
 using namespace boost::ut;
