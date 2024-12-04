@@ -172,6 +172,15 @@ background-size: cover
 - [.white[Kirisame Igna]](https://stackoverflow.com/users/22401258/kirisame-igna)
 
 ]
+
+### .white[Friends] 
+
+.white[
+
+- .white[Barbara]
+- .white[Ansel]
+
+]
 ]
 ---
 
